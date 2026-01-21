@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(alembic init:*)",
+      "Bash(python -m alembic:*)",
+      "Bash(timeout:*)",
+      "Bash(exit 0)",
+      "Bash(python seed_data.py:*)",
+      "Bash(curl:*)",
+      "Bash(uvicorn:*)",
+      "Bash(ping:*)",
+      "Bash(taskkill /F /PID 1680)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "github"
+  ],
+  "enableAllProjectMcpServers": true
+}
