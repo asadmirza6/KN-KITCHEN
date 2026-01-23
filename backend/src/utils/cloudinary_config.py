@@ -9,7 +9,10 @@ import cloudinary.api
 from fastapi import HTTPException, UploadFile, status
 import os
 from typing import Optional, Dict, Any
+from dotenv import load_dotenv
 
+# Load environment variables from .env file
+load_dotenv()
 
 # Initialize Cloudinary configuration
 CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME")
@@ -34,7 +37,7 @@ else:
         api_secret=CLOUDINARY_API_SECRET,
         secure=True
     )
-    print(f"✓ Cloudinary initialized successfully: {CLOUDINARY_CLOUD_NAME}")
+    print(f"[OK] Cloudinary initialized successfully: {CLOUDINARY_CLOUD_NAME}")
 
 
 def validate_image(file: UploadFile, max_size_mb: int = 10) -> None:

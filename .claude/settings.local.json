@@ -9,11 +9,12 @@
       "Bash(curl:*)",
       "Bash(uvicorn:*)",
       "Bash(ping:*)",
-      "Bash(taskkill /F /PID 1680)"
+      "Bash(taskkill /F /PID 1680)",
+      "Bash(python -c:*)"
     ]
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "github"
-  ],
-  "enableAllProjectMcpServers": true
+  ]
 }

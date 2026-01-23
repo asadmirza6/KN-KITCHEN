@@ -34,25 +34,25 @@ async def startup_validation():
     # Check database
     db_url = os.getenv("DATABASE_URL")
     if db_url:
-        print("✓ DATABASE_URL is set")
+        print("[OK] DATABASE_URL is set")
     else:
-        print("✗ DATABASE_URL is NOT set - Database will not work!")
+        print("[ERROR] DATABASE_URL is NOT set - Database will not work!")
 
     # Check JWT secret
     jwt_secret = os.getenv("BETTER_AUTH_SECRET")
     if jwt_secret and len(jwt_secret) >= 32:
-        print("✓ BETTER_AUTH_SECRET is set")
+        print("[OK] BETTER_AUTH_SECRET is set")
     else:
-        print("⚠ BETTER_AUTH_SECRET is weak or not set - Authentication may be insecure!")
+        print("[WARN] BETTER_AUTH_SECRET is weak or not set - Authentication may be insecure!")
 
     # Check Cloudinary
     if CLOUDINARY_CONFIGURED:
-        print("✓ Cloudinary is configured - Image uploads enabled")
+        print("[OK] Cloudinary is configured - Image uploads enabled")
     else:
-        print("⚠ Cloudinary NOT configured - Image uploads will fail")
-        print("  → Items can be created without images")
-        print("  → Gallery and banners require Cloudinary")
-        print("  → See CLOUDINARY_SETUP.md for instructions")
+        print("[WARN] Cloudinary NOT configured - Image uploads will fail")
+        print("  -> Items can be created without images")
+        print("  -> Gallery and banners require Cloudinary")
+        print("  -> See CLOUDINARY_SETUP.md for instructions")
 
     print("="*60 + "\n")
 
