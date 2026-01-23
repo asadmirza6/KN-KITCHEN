@@ -10,6 +10,7 @@ from decimal import Decimal
 
 from ..database import get_session
 from ..models import Item
+from ..models.item import UnitType
 from ..middleware.auth import verify_jwt
 from ..utils.cloudinary_config import upload_to_cloudinary, delete_from_cloudinary
 
@@ -30,6 +31,7 @@ def get_items(session: Session = Depends(get_session)):
         {
             "id": item.id,
             "name": item.name,
+            "unit_type": item.unit_type.value if hasattr(item.unit_type, 'value') else item.unit_type,
             "price_per_kg": str(item.price_per_kg),
             "image_url": item.image_url,
             "created_at": item.created_at.isoformat()
@@ -42,38 +44,62 @@ def get_items(session: Session = Depends(get_session)):
 async def create_item(
     name: str = Form(...),
     price_per_kg: str = Form(...),
-    image: UploadFile = File(...),
+    unit_type: str = Form("per_kg"),
+    image: Optional[UploadFile] = File(None),
     session: Session = Depends(get_session)
 ):
     """
-    Create a new menu item with Cloudinary image upload.
+    Create a new menu item with optional Cloudinary image upload.
     Requires admin JWT authentication.
 
     Args:
         name: Item name
-        price_per_kg: Price per kilogram (will be converted to Decimal)
-        image: Image file to upload to Cloudinary
+        price_per_kg: Price per unit (based on unit_type)
+        unit_type: Unit type (per_kg, per_piece, per_liter)
+        image: Optional image file to upload to Cloudinary
 
     Returns:
         Created item details
     """
     try:
+        # Validate unit type
+        try:
+            unit_type_enum = UnitType(unit_type)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid unit type. Must be one of: per_kg, per_piece, per_liter"
+            )
+
         # Convert price to Decimal
         price_decimal = Decimal(price_per_kg)
 
-        # Upload image to Cloudinary
-        upload_result = await upload_to_cloudinary(
-            file=image,
-            folder="kn_kitchen/items",
-            resource_type="image"
-        )
+        # Upload image to Cloudinary (if provided)
+        image_url = None
+        cloudinary_public_id = None
+
+        if image:
+            try:
+                upload_result = await upload_to_cloudinary(
+                    file=image,
+                    folder="kn_kitchen/items",
+                    resource_type="image"
+                )
+                image_url = upload_result["secure_url"]
+                cloudinary_public_id = upload_result["public_id"]
+            except HTTPException as e:
+                # If Cloudinary is not configured, allow item creation without image
+                print(f"Warning: Image upload failed: {e.detail}")
+                image_url = None
+                cloudinary_public_id = None
 
         # Create new item
         new_item = Item(
             name=name,
+            unit_type=unit_type_enum,
             price_per_kg=price_decimal,
-            image_url=upload_result["secure_url"],
-            cloudinary_public_id=upload_result["public_id"]
+            image_url=image_url,
+            cloudinary_public_id=cloudinary_public_id
         )
 
         session.add(new_item)
@@ -83,12 +109,15 @@ async def create_item(
         return {
             "id": new_item.id,
             "name": new_item.name,
+            "unit_type": new_item.unit_type.value,
             "price_per_kg": str(new_item.price_per_kg),
             "image_url": new_item.image_url,
             "cloudinary_public_id": new_item.cloudinary_public_id,
             "created_at": new_item.created_at.isoformat()
         }
 
+    except HTTPException:
+        raise
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -107,6 +136,7 @@ async def update_item(
     item_id: int,
     name: str = Form(...),
     price_per_kg: str = Form(...),
+    unit_type: str = Form("per_kg"),
     image: Optional[UploadFile] = File(None),
     session: Session = Depends(get_session)
 ):
@@ -117,7 +147,8 @@ async def update_item(
     Args:
         item_id: ID of item to update
         name: Updated item name
-        price_per_kg: Updated price per kilogram
+        price_per_kg: Updated price per unit
+        unit_type: Updated unit type (per_kg, per_piece, per_liter)
         image: Optional new image file (if provided, replaces existing)
 
     Returns:
@@ -132,11 +163,21 @@ async def update_item(
                 detail=f"Item with id {item_id} not found"
             )
 
+        # Validate unit type
+        try:
+            unit_type_enum = UnitType(unit_type)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid unit type. Must be one of: per_kg, per_piece, per_liter"
+            )
+
         # Convert price to Decimal
         price_decimal = Decimal(price_per_kg)
 
         # Update basic fields
         item.name = name
+        item.unit_type = unit_type_enum
         item.price_per_kg = price_decimal
 
         # If new image provided, delete old one and upload new
@@ -162,6 +203,7 @@ async def update_item(
         return {
             "id": item.id,
             "name": item.name,
+            "unit_type": item.unit_type.value,
             "price_per_kg": str(item.price_per_kg),
             "image_url": item.image_url,
             "cloudinary_public_id": item.cloudinary_public_id,

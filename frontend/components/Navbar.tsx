@@ -45,8 +45,15 @@ export default function Navbar() {
         <div className="flex justify-between h-16">
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
-            <a href="/" className="text-2xl font-bold text-indigo-600">
-              KN KITCHEN
+            <a href="/" className="flex items-center gap-2">
+              <img
+                src="/images/logo.jpeg"
+                alt="KN KITCHEN Logo"
+                className="h-12 w-auto object-contain"
+              />
+              <span className="text-2xl font-bold text-indigo-600 hidden sm:block">
+                KN KITCHEN
+              </span>
             </a>
           </div>
 

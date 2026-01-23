@@ -15,7 +15,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.pdfgen import canvas
 
 from ..database import get_session
@@ -475,6 +475,15 @@ def download_invoice(
     # Container for PDF elements
     elements = []
     styles = getSampleStyleSheet()
+
+    # Logo
+    import os
+    logo_path = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'logo.jpeg')
+    if os.path.exists(logo_path):
+        logo = Image(logo_path, width=2*inch, height=1*inch)
+        logo.hAlign = 'CENTER'
+        elements.append(logo)
+        elements.append(Spacer(1, 0.1*inch))
 
     # Title
     title_style = styles['Heading1']

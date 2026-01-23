@@ -160,15 +160,17 @@ export default function AdminUsersPage() {
             Back to Dashboard
           </button>
 
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add New User
-          </button>
+          {currentUser?.role === 'ADMIN' && (
+            <button
+              onClick={() => setShowForm(!showForm)}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add New User
+            </button>
+          )}
         </div>
 
         {/* Error Message */}
@@ -325,18 +327,20 @@ export default function AdminUsersPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => handleDelete(user)}
-                          disabled={user.id === currentUser?.id}
-                          className={`${
-                            user.id === currentUser?.id
-                              ? 'text-gray-400 cursor-not-allowed'
-                              : 'text-red-600 hover:text-red-900'
-                          }`}
-                          title={user.id === currentUser?.id ? 'Cannot delete your own account' : 'Delete user'}
-                        >
-                          Delete
-                        </button>
+                        {currentUser?.role === 'ADMIN' && (
+                          <button
+                            onClick={() => handleDelete(user)}
+                            disabled={user.id === currentUser?.id}
+                            className={`${
+                              user.id === currentUser?.id
+                                ? 'text-gray-400 cursor-not-allowed'
+                                : 'text-red-600 hover:text-red-900'
+                            }`}
+                            title={user.id === currentUser?.id ? 'Cannot delete your own account' : 'Delete user'}
+                          >
+                            Delete
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

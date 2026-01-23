@@ -12,12 +12,29 @@ from typing import Optional, Dict, Any
 
 
 # Initialize Cloudinary configuration
-cloudinary.config(
-    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
-    api_key=os.getenv("CLOUDINARY_API_KEY"),
-    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
-    secure=True
-)
+CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME")
+CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY")
+CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET")
+
+# Validate that Cloudinary credentials are set
+if not CLOUDINARY_CLOUD_NAME or CLOUDINARY_CLOUD_NAME == "your_cloud_name":
+    print("WARNING: CLOUDINARY_CLOUD_NAME not configured in .env file")
+    CLOUDINARY_CONFIGURED = False
+elif not CLOUDINARY_API_KEY or CLOUDINARY_API_KEY == "your_api_key":
+    print("WARNING: CLOUDINARY_API_KEY not configured in .env file")
+    CLOUDINARY_CONFIGURED = False
+elif not CLOUDINARY_API_SECRET or CLOUDINARY_API_SECRET == "your_api_secret":
+    print("WARNING: CLOUDINARY_API_SECRET not configured in .env file")
+    CLOUDINARY_CONFIGURED = False
+else:
+    CLOUDINARY_CONFIGURED = True
+    cloudinary.config(
+        cloud_name=CLOUDINARY_CLOUD_NAME,
+        api_key=CLOUDINARY_API_KEY,
+        api_secret=CLOUDINARY_API_SECRET,
+        secure=True
+    )
+    print(f"✓ Cloudinary initialized successfully: {CLOUDINARY_CLOUD_NAME}")
 
 
 def validate_image(file: UploadFile, max_size_mb: int = 10) -> None:
@@ -73,6 +90,13 @@ async def upload_to_cloudinary(
     Raises:
         HTTPException: If upload fails
     """
+    # Check if Cloudinary is configured
+    if not CLOUDINARY_CONFIGURED:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Cloudinary is not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in your .env file. Get credentials from https://cloudinary.com/console"
+        )
+
     try:
         # Validate image first
         validate_image(file)
@@ -95,10 +119,14 @@ async def upload_to_cloudinary(
 
         return upload_result
 
+    except HTTPException:
+        raise
     except Exception as e:
         # Handle both Cloudinary-specific and general exceptions
         error_msg = str(e)
-        if "cloudinary" in error_msg.lower():
+        if "api_key" in error_msg.lower():
+            detail = "Cloudinary API credentials are invalid. Please check CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in your .env file."
+        elif "cloudinary" in error_msg.lower():
             detail = f"Cloudinary upload failed: {error_msg}"
         else:
             detail = f"Upload failed: {error_msg}"

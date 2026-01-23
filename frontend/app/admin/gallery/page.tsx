@@ -1,36 +1,50 @@
 'use client'
 
 /**
- * Admin Gallery Management Page
- * Upload and manage gallery images with Cloudinary
+ * Admin Gallery Management Page - Album Based System
+ * Upload and manage photo albums with multiple images
  */
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { isAuthenticated } from '@/services/authService'
+import { isAuthenticated, getCurrentUser } from '@/services/authService'
 import axios from '@/lib/axios'
+
+interface Album {
+  id: number
+  title: string
+  description: string | null
+  image_count: number
+  images: GalleryImage[]
+  created_at: string
+}
 
 interface GalleryImage {
   id: number
-  type: string
-  title: string | null
   image_url: string
   cloudinary_public_id: string | null
-  is_active: boolean
   created_at: string
 }
 
 export default function AdminGalleryPage() {
   const router = useRouter()
-  const [images, setImages] = useState<GalleryImage[]>([])
+  const [albums, setAlbums] = useState<Album[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [showUpload, setShowUpload] = useState(false)
+  const [showAlbumForm, setShowAlbumForm] = useState(false)
+  const [showImageUpload, setShowImageUpload] = useState(false)
+  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null)
+  const [currentUser, setCurrentUser] = useState<any>(null)
 
-  // Upload form state
-  const [title, setTitle] = useState('')
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  // Album form state
+  const [albumFormData, setAlbumFormData] = useState({
+    title: '',
+    description: ''
+  })
+
+  // Image upload state
+  const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
@@ -38,39 +52,66 @@ export default function AdminGalleryPage() {
       router.push('/login')
       return
     }
-    fetchGalleryImages()
+    setCurrentUser(getCurrentUser())
+    fetchAlbums()
   }, [router])
 
-  const fetchGalleryImages = async () => {
+  const fetchAlbums = async () => {
     try {
       setLoading(true)
       setError(null)
-      const response = await axios.get('/media/?type=gallery')
-      setImages(response.data)
+      const response = await axios.get('/albums/')
+      setAlbums(response.data)
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to fetch gallery images')
+      setError(err.response?.data?.detail || 'Failed to fetch albums')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setImageFile(file)
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
+  const handleCreateAlbum = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!albumFormData.title) {
+      setError('Please provide an album title')
+      return
+    }
+
+    try {
+      await axios.post('/albums/', albumFormData)
+      setAlbumFormData({ title: '', description: '' })
+      setShowAlbumForm(false)
+      await fetchAlbums()
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to create album')
     }
   }
 
-  const handleUpload = async (e: React.FormEvent) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+
+    setImageFiles(files)
+
+    // Create previews
+    const previews: string[] = []
+    files.forEach((file) => {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        previews.push(reader.result as string)
+        if (previews.length === files.length) {
+          setImagePreviews(previews)
+        }
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const handleUploadImages = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!imageFile) {
-      setError('Please select an image')
+    if (!selectedAlbum || imageFiles.length === 0) {
+      setError('Please select images to upload')
       return
     }
 
@@ -79,48 +120,58 @@ export default function AdminGalleryPage() {
 
     try {
       const formData = new FormData()
-      formData.append('type', 'gallery')
-      formData.append('title', title || '')
-      formData.append('image', imageFile)
+      imageFiles.forEach((file) => {
+        formData.append('images', file)
+      })
 
-      await axios.post('/media/upload', formData, {
+      await axios.post(`/albums/${selectedAlbum.id}/images`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
 
       // Reset form
-      setTitle('')
-      setImageFile(null)
-      setImagePreview(null)
-      setShowUpload(false)
+      setImageFiles([])
+      setImagePreviews([])
+      setShowImageUpload(false)
+      setSelectedAlbum(null)
 
-      // Refresh gallery
-      await fetchGalleryImages()
+      // Refresh albums
+      await fetchAlbums()
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to upload image')
+      setError(err.response?.data?.detail || 'Failed to upload images')
     } finally {
       setUploading(false)
     }
   }
 
-  const handleDelete = async (image: GalleryImage) => {
-    if (!confirm(`Are you sure you want to delete this image${image.title ? ` "${image.title}"` : ''}?`)) {
+  const handleDeleteAlbum = async (album: Album) => {
+    if (!confirm(`Are you sure you want to delete album "${album.title}" and all its ${album.image_count} images?`)) {
       return
     }
 
     try {
-      await axios.delete(`/media/${image.id}`)
-      await fetchGalleryImages()
+      await axios.delete(`/albums/${album.id}`)
+      await fetchAlbums()
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to delete album')
+    }
+  }
+
+  const handleDeleteImage = async (albumId: number, imageId: number) => {
+    if (!confirm('Are you sure you want to delete this image?')) {
+      return
+    }
+
+    try {
+      await axios.delete(`/albums/${albumId}/images/${imageId}`)
+      await fetchAlbums()
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to delete image')
     }
   }
 
-  const handleCancelUpload = () => {
-    setShowUpload(false)
-    setTitle('')
-    setImageFile(null)
-    setImagePreview(null)
-    setError(null)
+  const openImageUpload = (album: Album) => {
+    setSelectedAlbum(album)
+    setShowImageUpload(true)
   }
 
   return (
@@ -139,13 +190,13 @@ export default function AdminGalleryPage() {
           </button>
 
           <button
-            onClick={() => setShowUpload(!showUpload)}
+            onClick={() => setShowAlbumForm(!showAlbumForm)}
             className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Upload Image
+            Create Album
           </button>
         </div>
 
@@ -156,43 +207,91 @@ export default function AdminGalleryPage() {
           </div>
         )}
 
-        {/* Upload Form */}
-        {showUpload && (
+        {/* Create Album Form */}
+        {showAlbumForm && (
           <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Upload Gallery Image</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Create New Album</h2>
 
-            <form onSubmit={handleUpload} className="space-y-4">
+            <form onSubmit={handleCreateAlbum} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Title (Optional)
+                  Album Title *
                 </label>
                 <input
                   type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  value={albumFormData.title}
+                  onChange={(e) => setAlbumFormData({ ...albumFormData, title: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  placeholder="e.g., Catering Event 2024"
+                  placeholder="e.g., Wedding Event 2026"
+                  required
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Image *
+                  Event Description
+                </label>
+                <textarea
+                  value={albumFormData.description}
+                  onChange={(e) => setAlbumFormData({ ...albumFormData, description: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="Describe the event or occasion..."
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700"
+                >
+                  Create Album
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAlbumForm(false)
+                    setAlbumFormData({ title: '', description: '' })
+                  }}
+                  className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Upload Images Modal */}
+        {showImageUpload && selectedAlbum && (
+          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              Upload Images to "{selectedAlbum.title}"
+            </h2>
+
+            <form onSubmit={handleUploadImages} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Select Multiple Images *
                 </label>
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/gif,image/webp"
                   onChange={handleImageChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  multiple
                   required
                 />
-                {imagePreview && (
-                  <div className="mt-2">
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="w-48 h-48 object-cover rounded-lg"
-                    />
+                {imagePreviews.length > 0 && (
+                  <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                    {imagePreviews.map((preview, index) => (
+                      <img
+                        key={index}
+                        src={preview}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-lg"
+                      />
+                    ))}
                   </div>
                 )}
               </div>
@@ -203,11 +302,16 @@ export default function AdminGalleryPage() {
                   disabled={uploading}
                   className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {uploading ? 'Uploading...' : 'Upload Image'}
+                  {uploading ? `Uploading ${imageFiles.length} images...` : `Upload ${imageFiles.length} Images`}
                 </button>
                 <button
                   type="button"
-                  onClick={handleCancelUpload}
+                  onClick={() => {
+                    setShowImageUpload(false)
+                    setSelectedAlbum(null)
+                    setImageFiles([])
+                    setImagePreviews([])
+                  }}
                   className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300"
                 >
                   Cancel
@@ -217,22 +321,15 @@ export default function AdminGalleryPage() {
           </div>
         )}
 
-        {/* Gallery Grid */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Gallery Images</h2>
-            <p className="text-sm text-gray-600 mt-1">
-              {images.length} {images.length === 1 ? 'image' : 'images'}
-            </p>
-          </div>
-
+        {/* Albums List */}
+        <div className="space-y-6">
           {loading ? (
-            <div className="p-12 text-center">
+            <div className="bg-white rounded-lg shadow-lg p-12 text-center">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-              <p className="mt-4 text-gray-600">Loading gallery...</p>
+              <p className="mt-4 text-gray-600">Loading albums...</p>
             </div>
-          ) : images.length === 0 ? (
-            <div className="p-12 text-center text-gray-500">
+          ) : albums.length === 0 ? (
+            <div className="bg-white rounded-lg shadow-lg p-12 text-center text-gray-500">
               <svg
                 className="mx-auto h-16 w-16 text-gray-400 mb-4"
                 fill="none"
@@ -246,53 +343,72 @@ export default function AdminGalleryPage() {
                   d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                 />
               </svg>
-              <p>No gallery images yet. Click "Upload Image" to add one.</p>
+              <p>No albums yet. Click "Create Album" to add one.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {images.map((image) => (
-                <div
-                  key={image.id}
-                  className="relative group rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow"
-                >
-                  <div className="aspect-square">
-                    <img
-                      src={image.image_url}
-                      alt={image.title || 'Gallery image'}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-
-                  {/* Overlay on hover */}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-opacity flex items-center justify-center">
-                    <button
-                      onClick={() => handleDelete(image)}
-                      className="opacity-0 group-hover:opacity-100 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-opacity"
-                    >
-                      Delete
-                    </button>
-                  </div>
-
-                  {/* Title */}
-                  {image.title && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3">
-                      <p className="text-white text-sm font-medium truncate">
-                        {image.title}
+            albums.map((album) => (
+              <div key={album.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
+                {/* Album Header */}
+                <div className="px-6 py-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-gray-200">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">{album.title}</h3>
+                      {album.description && (
+                        <p className="text-sm text-gray-600 mt-1">{album.description}</p>
+                      )}
+                      <p className="text-xs text-gray-500 mt-2">
+                        {album.image_count} {album.image_count === 1 ? 'image' : 'images'} • Created {new Date(album.created_at).toLocaleDateString()}
                       </p>
                     </div>
-                  )}
-
-                  {/* Status badge */}
-                  {!image.is_active && (
-                    <div className="absolute top-2 right-2">
-                      <span className="bg-gray-800 bg-opacity-75 text-white text-xs px-2 py-1 rounded">
-                        Inactive
-                      </span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => openImageUpload(album)}
+                        className="bg-indigo-600 text-white px-3 py-1 text-sm rounded hover:bg-indigo-700"
+                      >
+                        Add Images
+                      </button>
+                      {currentUser?.role === 'ADMIN' && (
+                        <button
+                          onClick={() => handleDeleteAlbum(album)}
+                          className="bg-red-600 text-white px-3 py-1 text-sm rounded hover:bg-red-700"
+                        >
+                          Delete Album
+                        </button>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
-              ))}
-            </div>
+
+                {/* Album Images Grid */}
+                {album.images.length > 0 ? (
+                  <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    {album.images.map((image) => (
+                      <div key={image.id} className="relative group">
+                        <img
+                          src={image.image_url}
+                          alt="Gallery image"
+                          className="w-full h-32 object-cover rounded-lg"
+                        />
+                        {currentUser?.role === 'ADMIN' && (
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-opacity flex items-center justify-center rounded-lg">
+                            <button
+                              onClick={() => handleDeleteImage(album.id, image.id)}
+                              className="opacity-0 group-hover:opacity-100 bg-red-600 text-white px-2 py-1 text-xs rounded hover:bg-red-700 transition-opacity"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center text-gray-500 text-sm">
+                    No images in this album yet. Click "Add Images" to upload.
+                  </div>
+                )}
+              </div>
+            ))
           )}
         </div>
       </div>

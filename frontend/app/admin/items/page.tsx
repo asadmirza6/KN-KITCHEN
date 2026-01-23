@@ -7,13 +7,14 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { isAuthenticated } from '@/services/authService'
+import { isAuthenticated, getCurrentUser } from '@/services/authService'
 import axios from '@/lib/axios'
 import { formatCurrency } from '@/lib/currency'
 
 interface Item {
   id: number
   name: string
+  unit_type: string
   price_per_kg: string
   image_url: string | null
   cloudinary_public_id: string | null
@@ -27,11 +28,13 @@ export default function AdminItemsPage() {
   const [error, setError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editingItem, setEditingItem] = useState<Item | null>(null)
+  const [currentUser, setCurrentUser] = useState<any>(null)
 
   // Form state
   const [formData, setFormData] = useState({
     name: '',
-    price_per_kg: ''
+    price_per_kg: '',
+    unit_type: 'per_kg'
   })
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -42,6 +45,7 @@ export default function AdminItemsPage() {
       router.push('/login')
       return
     }
+    setCurrentUser(getCurrentUser())
     fetchItems()
   }, [router])
 
@@ -78,11 +82,6 @@ export default function AdminItemsPage() {
       return
     }
 
-    if (!editingItem && !imageFile) {
-      setError('Please select an image')
-      return
-    }
-
     setSubmitting(true)
     setError(null)
 
@@ -90,6 +89,7 @@ export default function AdminItemsPage() {
       const formDataToSend = new FormData()
       formDataToSend.append('name', formData.name)
       formDataToSend.append('price_per_kg', formData.price_per_kg)
+      formDataToSend.append('unit_type', formData.unit_type)
 
       if (imageFile) {
         formDataToSend.append('image', imageFile)
@@ -106,7 +106,7 @@ export default function AdminItemsPage() {
       }
 
       // Reset form
-      setFormData({ name: '', price_per_kg: '' })
+      setFormData({ name: '', price_per_kg: '', unit_type: 'per_kg' })
       setImageFile(null)
       setImagePreview(null)
       setShowForm(false)
@@ -125,7 +125,8 @@ export default function AdminItemsPage() {
     setEditingItem(item)
     setFormData({
       name: item.name,
-      price_per_kg: item.price_per_kg
+      price_per_kg: item.price_per_kg,
+      unit_type: item.unit_type || 'per_kg'
     })
     setImagePreview(item.image_url)
     setShowForm(true)
@@ -147,7 +148,7 @@ export default function AdminItemsPage() {
   const handleCancelForm = () => {
     setShowForm(false)
     setEditingItem(null)
-    setFormData({ name: '', price_per_kg: '' })
+    setFormData({ name: '', price_per_kg: '', unit_type: 'per_kg' })
     setImageFile(null)
     setImagePreview(null)
     setError(null)
@@ -210,7 +211,23 @@ export default function AdminItemsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Price per Kg (Rs) *
+                  Unit Type *
+                </label>
+                <select
+                  value={formData.unit_type}
+                  onChange={(e) => setFormData({ ...formData, unit_type: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  required
+                >
+                  <option value="per_kg">per KG</option>
+                  <option value="per_piece">per Piece</option>
+                  <option value="per_liter">per Liter</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Price {formData.unit_type === 'per_kg' ? 'per Kg' : formData.unit_type === 'per_piece' ? 'per Piece' : 'per Liter'} (Rs) *
                 </label>
                 <input
                   type="number"
@@ -225,7 +242,7 @@ export default function AdminItemsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Image {!editingItem && '*'}
+                  Item Image (Optional)
                 </label>
                 <input
                   type="file"
@@ -291,7 +308,10 @@ export default function AdminItemsPage() {
                       Name
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Price per Kg
+                      Unit Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Price
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Created
@@ -323,6 +343,11 @@ export default function AdminItemsPage() {
                         <div className="text-sm font-medium text-gray-900">{item.name}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                          {item.unit_type === 'per_kg' ? 'per KG' : item.unit_type === 'per_piece' ? 'per Piece' : 'per Liter'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{formatCurrency(item.price_per_kg)}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -337,12 +362,14 @@ export default function AdminItemsPage() {
                         >
                           Edit
                         </button>
-                        <button
-                          onClick={() => handleDelete(item)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          Delete
-                        </button>
+                        {currentUser?.role === 'ADMIN' && (
+                          <button
+                            onClick={() => handleDelete(item)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

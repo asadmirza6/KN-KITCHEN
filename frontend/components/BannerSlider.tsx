@@ -16,6 +16,13 @@ import 'swiper/css'
 import 'swiper/css/pagination'
 
 
+// Local fallback banners
+const LOCAL_BANNERS = [
+  { id: -1, image_url: '/images/banner1.jpeg', title: 'Welcome to KN KITCHEN' },
+  { id: -2, image_url: '/images/banner2.jpeg', title: 'Quality Catering Services' },
+  { id: -3, image_url: '/images/banner3.jpeg', title: 'Professional Event Catering' },
+]
+
 export default function BannerSlider() {
   const [banners, setBanners] = useState<MediaAsset[]>([])
   const [loading, setLoading] = useState(true)
@@ -28,10 +35,16 @@ export default function BannerSlider() {
   const loadBanners = async () => {
     try {
       const data = await fetchBanners()
-      setBanners(data)
+      // If no banners from database, use local fallback
+      if (data && data.length > 0) {
+        setBanners(data)
+      } else {
+        setBanners(LOCAL_BANNERS as any)
+      }
     } catch (err: any) {
       console.error('Failed to load banners:', err)
-      setError('Failed to load banners')
+      // Use local banners as fallback on error
+      setBanners(LOCAL_BANNERS as any)
     } finally {
       setLoading(false)
     }
@@ -76,7 +89,10 @@ export default function BannerSlider() {
           <SwiperSlide key={banner.id}>
             <div className="relative w-full h-96">
               <img
-                src={`${process.env.NEXT_PUBLIC_API_URL}${banner.image_url}`}
+                src={banner.image_url.startsWith('/images/')
+                  ? banner.image_url
+                  : `${process.env.NEXT_PUBLIC_API_URL}${banner.image_url}`
+                }
                 alt={banner.title || 'Banner'}
                 className="w-full h-full object-cover"
               />

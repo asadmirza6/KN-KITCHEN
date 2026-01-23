@@ -38,6 +38,9 @@ class MediaAsset(SQLModel, table=True):
     # Media type as enum (stored as string in database)
     type: MediaType = Field(sa_column=Column(String(10), nullable=False, index=True))
 
+    # Album reference (for gallery images that belong to albums)
+    album_id: Optional[int] = Field(default=None, foreign_key="albums.id", nullable=True, index=True)
+
     title: Optional[str] = Field(
         max_length=255,
         nullable=True,

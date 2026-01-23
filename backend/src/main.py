@@ -20,6 +20,43 @@ app = FastAPI(
 )
 
 
+# Startup event: Validate environment variables
+@app.on_event("startup")
+async def startup_validation():
+    """Validate required environment variables on startup."""
+    import os
+    from .utils.cloudinary_config import CLOUDINARY_CONFIGURED
+
+    print("\n" + "="*60)
+    print("KN KITCHEN API - Startup Validation")
+    print("="*60)
+
+    # Check database
+    db_url = os.getenv("DATABASE_URL")
+    if db_url:
+        print("✓ DATABASE_URL is set")
+    else:
+        print("✗ DATABASE_URL is NOT set - Database will not work!")
+
+    # Check JWT secret
+    jwt_secret = os.getenv("BETTER_AUTH_SECRET")
+    if jwt_secret and len(jwt_secret) >= 32:
+        print("✓ BETTER_AUTH_SECRET is set")
+    else:
+        print("⚠ BETTER_AUTH_SECRET is weak or not set - Authentication may be insecure!")
+
+    # Check Cloudinary
+    if CLOUDINARY_CONFIGURED:
+        print("✓ Cloudinary is configured - Image uploads enabled")
+    else:
+        print("⚠ Cloudinary NOT configured - Image uploads will fail")
+        print("  → Items can be created without images")
+        print("  → Gallery and banners require Cloudinary")
+        print("  → See CLOUDINARY_SETUP.md for instructions")
+
+    print("="*60 + "\n")
+
+
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
@@ -72,10 +109,11 @@ def root():
 
 
 # Import and mount routers
-from .api import auth, items, media, orders, users
+from .api import auth, items, media, orders, users, albums
 
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(items.router, prefix="/items", tags=["Items"])
 app.include_router(media.router, prefix="/media", tags=["Media"])
+app.include_router(albums.router, prefix="/albums", tags=["Albums"])
 app.include_router(orders.router, prefix="/orders", tags=["Orders"])
 app.include_router(users.router, prefix="/users", tags=["Users"])

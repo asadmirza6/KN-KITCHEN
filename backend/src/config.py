@@ -18,10 +18,10 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_days: int = 7
 
-    # Cloudinary Configuration
-    cloudinary_cloud_name: str
-    cloudinary_api_key: str
-    cloudinary_api_secret: str
+    # Cloudinary Configuration (optional for development)
+    cloudinary_cloud_name: Optional[str] = "your_cloud_name"
+    cloudinary_api_key: Optional[str] = "your_api_key"
+    cloudinary_api_secret: Optional[str] = "your_api_secret"
     cloudinary_folder: str = "kn_kitchen"
 
     # CORS (for production)

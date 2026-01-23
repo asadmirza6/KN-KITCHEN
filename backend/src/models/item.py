@@ -3,10 +3,19 @@ Item model for menu items.
 Stores catering menu items with pricing and images.
 """
 
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Column
+from sqlalchemy import String
 from typing import Optional
 from datetime import datetime
 from decimal import Decimal
+from enum import Enum
+
+
+class UnitType(str, Enum):
+    """Unit type enumeration for item pricing"""
+    PER_KG = "per_kg"
+    PER_PIECE = "per_piece"
+    PER_LITER = "per_liter"
 
 
 class Item(SQLModel, table=True):
@@ -27,12 +36,19 @@ class Item(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(max_length=255, nullable=False, index=True)
 
+    # Unit type for pricing
+    unit_type: UnitType = Field(
+        sa_column=Column(String(20), nullable=False, index=True),
+        default=UnitType.PER_KG,
+        description="Unit type: per_kg, per_piece, or per_liter"
+    )
+
     # Use Decimal for price (precision matters)
     price_per_kg: Decimal = Field(
         max_digits=10,
         decimal_places=2,
         nullable=False,
-        description="Price per kilogram in currency"
+        description="Price per unit (based on unit_type)"
     )
 
     image_url: Optional[str] = Field(
