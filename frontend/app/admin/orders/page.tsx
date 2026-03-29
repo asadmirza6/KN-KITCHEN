@@ -22,6 +22,8 @@ interface OrderItem {
 
 interface Order {
   id: number
+  user_id: number
+  created_by_name: string
   customer_name: string
   customer_email: string
   customer_phone: string
@@ -747,6 +749,7 @@ export default function AdminOrdersPage() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created By</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
@@ -762,6 +765,9 @@ export default function AdminOrdersPage() {
                     <tr key={order.id} className={getRowClassName(order)}>
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         #{order.id}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {order.created_by_name}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{order.customer_name}</div>
@@ -1120,6 +1126,7 @@ export default function AdminOrdersPage() {
               <div>
                 <h3 className="font-medium text-gray-900 mb-2">Order Information</h3>
                 <div className="bg-gray-50 p-4 rounded-md space-y-2">
+                  <p><span className="font-medium">Order Taken By:</span> {selectedOrder.created_by_name}</p>
                   <p><span className="font-medium">Order Date:</span> {new Date(selectedOrder.created_at).toLocaleString()}</p>
                   <p><span className="font-medium">Order ID:</span> #{selectedOrder.id}</p>
                 </div>

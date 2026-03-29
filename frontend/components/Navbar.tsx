@@ -92,9 +92,17 @@ export default function Navbar() {
           </div>
 
           {/* Login/Logout Button (Right) */}
-          <div className="flex items-center">
+          <div className="flex items-center space-x-4">
             {user ? (
-              <div className="flex items-center space-x-4">
+              <>
+                {user.role === 'ADMIN' && (
+                  <a
+                    href="/admin"
+                    className="text-gray-700 hover:text-indigo-600 px-3 py-2 text-sm font-medium transition-colors"
+                  >
+                    Admin Panel
+                  </a>
+                )}
                 <span className="text-sm text-gray-700">
                   Welcome, <span className="font-medium">{user.name}</span>
                 </span>
@@ -104,7 +112,7 @@ export default function Navbar() {
                 >
                   Logout
                 </button>
-              </div>
+              </>
             ) : (
               <button
                 onClick={handleLogin}
@@ -150,6 +158,14 @@ export default function Navbar() {
           >
             FEEDBACK
           </a>
+          {user && user.role === 'ADMIN' && (
+            <a
+              href="/admin"
+              className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium"
+            >
+              Admin Panel
+            </a>
+          )}
         </div>
       </div>
     </nav>

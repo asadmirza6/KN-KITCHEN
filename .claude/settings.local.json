@@ -10,7 +10,9 @@
       "Bash(uvicorn:*)",
       "Bash(ping:*)",
       "Bash(taskkill /F /PID 1680)",
-      "Bash(python -c:*)"
+      "Bash(python -c:*)",
+      "Bash(dir D:spKN-KITCHENfrontend.env*)",
+      "Bash(python test_user_creation.py:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -89,10 +89,7 @@ export default function BannerSlider() {
           <SwiperSlide key={banner.id}>
             <div className="relative w-full h-96">
               <img
-                src={banner.image_url.startsWith('/images/')
-                  ? banner.image_url
-                  : `${process.env.NEXT_PUBLIC_API_URL}${banner.image_url}`
-                }
+                src={banner.image_url.startsWith('http') ? banner.image_url : `${process.env.NEXT_PUBLIC_API_URL}${banner.image_url}`}
                 alt={banner.title || 'Banner'}
                 className="w-full h-full object-cover"
               />

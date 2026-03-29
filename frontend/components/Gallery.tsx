@@ -111,7 +111,37 @@ export default function Gallery() {
                     <img
                       src={image.image_url}
                       alt="Gallery photo"
-                      className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
+                      className="w-full h-full object-cover hover:scale-110 transition-transform duration-300 cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Open fullscreen view
+                        const fullScreenImage = document.createElement('div');
+                        fullScreenImage.style.position = 'fixed';
+                        fullScreenImage.style.top = '0';
+                        fullScreenImage.style.left = '0';
+                        fullScreenImage.style.width = '100%';
+                        fullScreenImage.style.height = '100%';
+                        fullScreenImage.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+                        fullScreenImage.style.display = 'flex';
+                        fullScreenImage.style.justifyContent = 'center';
+                        fullScreenImage.style.alignItems = 'center';
+                        fullScreenImage.style.zIndex = '9999';
+                        fullScreenImage.style.cursor = 'pointer';
+
+                        const imgElement = document.createElement('img');
+                        imgElement.src = image.image_url;
+                        imgElement.alt = "Fullscreen gallery photo";
+                        imgElement.style.maxWidth = '90%';
+                        imgElement.style.maxHeight = '90%';
+                        imgElement.style.objectFit = 'contain';
+
+                        fullScreenImage.appendChild(imgElement);
+                        document.body.appendChild(fullScreenImage);
+
+                        fullScreenImage.addEventListener('click', () => {
+                          document.body.removeChild(fullScreenImage);
+                        });
+                      }}
                     />
                   </div>
                 ))}

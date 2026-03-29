@@ -83,7 +83,7 @@ export default function MenuItems() {
               {item.image_url ? (
                 <div className="aspect-square relative overflow-hidden">
                   <img
-                    src={`${process.env.NEXT_PUBLIC_API_URL}${item.image_url}`}
+                    src={item.image_url.startsWith('http') ? item.image_url : `${process.env.NEXT_PUBLIC_API_URL}${item.image_url}`}
                     alt={item.name}
                     className="w-full h-full object-cover"
                   />

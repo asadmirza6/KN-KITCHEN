@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { isAuthenticated, getCurrentUser } from '@/services/authService'
 import axios from '@/lib/axios'
 import { formatCurrency } from '@/lib/currency'
+import Toast from '@/components/Toast'
 
 interface Item {
   id: number
@@ -29,6 +30,7 @@ export default function AdminItemsPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingItem, setEditingItem] = useState<Item | null>(null)
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [toast, setToast] = useState({ message: '', type: 'success' as 'success' | 'error', isVisible: false })
 
   // Form state
   const [formData, setFormData] = useState({
@@ -39,6 +41,10 @@ export default function AdminItemsPage() {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type, isVisible: true });
+  };
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -114,8 +120,12 @@ export default function AdminItemsPage() {
 
       // Refresh list
       await fetchItems()
+
+      // Show success message
+      showToast(editingItem ? 'Item updated successfully!' : 'Item created successfully!', 'success');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to save item')
+      showToast(err.response?.data?.detail || 'Failed to save item', 'error');
     } finally {
       setSubmitting(false)
     }
@@ -140,8 +150,10 @@ export default function AdminItemsPage() {
     try {
       await axios.delete(`/items/${item.id}`)
       await fetchItems()
+      showToast('Item deleted successfully!', 'success');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to delete item')
+      showToast(err.response?.data?.detail || 'Failed to delete item', 'error');
     }
   }
 
@@ -156,6 +168,12 @@ export default function AdminItemsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={() => setToast({...toast, isVisible: false})}
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-6 flex justify-between items-center">
