@@ -272,14 +272,165 @@ export default function AdminOrdersPage() {
         </button>
       </div>
       <h1 className="text-2xl font-bold mb-6">Orders Management</h1>
-      
-      {/* Table and form logic here... simplified for build fix */}
+
+      {error && <div className="bg-red-100 text-red-700 p-3 rounded mb-4">{error}</div>}
+      {success && <div className="bg-green-100 text-green-700 p-3 rounded mb-4">{success}</div>}
+
+      {/* Create Order Form */}
+      {showCreateForm && (
+        <div className="bg-white shadow rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-bold mb-4">Create New Order</h2>
+          <form onSubmit={handleCreateOrder}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <input
+                type="text"
+                placeholder="Customer Name"
+                value={formData.customerName}
+                onChange={(e) => setFormData({...formData, customerName: e.target.value})}
+                className="border p-2 rounded"
+                required
+              />
+              <input
+                type="email"
+                placeholder="Customer Email"
+                value={formData.customerEmail}
+                onChange={(e) => setFormData({...formData, customerEmail: e.target.value})}
+                className="border p-2 rounded"
+                required
+              />
+              <input
+                type="tel"
+                placeholder="Customer Phone"
+                value={formData.customerPhone}
+                onChange={(e) => setFormData({...formData, customerPhone: e.target.value})}
+                className="border p-2 rounded"
+                required
+              />
+            </div>
+
+            <div className="mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-semibold">Order Items</h3>
+                <button type="button" onClick={handleAddItem} className="bg-blue-500 text-white px-3 py-1 rounded text-sm">
+                  + Add Item
+                </button>
+              </div>
+              {formData.selectedItems.map((orderItem, index) => (
+                <div key={index} className="flex gap-2 mb-2">
+                  <select
+                    value={orderItem.itemId}
+                    onChange={(e) => handleItemChange(index, 'itemId', parseInt(e.target.value))}
+                    className="border p-2 rounded flex-1"
+                  >
+                    {items.map(item => (
+                      <option key={item.id} value={item.id}>{item.name} - {formatCurrency(parseFloat(item.price_per_kg))}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    min="0.1"
+                    step="0.1"
+                    value={orderItem.quantity}
+                    onChange={(e) => handleItemChange(index, 'quantity', parseFloat(e.target.value))}
+                    className="border p-2 rounded w-24"
+                    placeholder="Qty"
+                  />
+                  <button type="button" onClick={() => handleRemoveItem(index)} className="bg-red-500 text-white px-3 py-2 rounded">
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Total Amount</label>
+                <input
+                  type="text"
+                  value={formatCurrency(calculateTotal())}
+                  className="border p-2 rounded w-full bg-gray-100"
+                  readOnly
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Advance Payment</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.advancePayment}
+                  onChange={(e) => setFormData({...formData, advancePayment: e.target.value})}
+                  className="border p-2 rounded w-full"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Delivery Date (Optional)</label>
+                <input
+                  type="date"
+                  value={formData.deliveryDate}
+                  onChange={(e) => setFormData({...formData, deliveryDate: e.target.value})}
+                  className="border p-2 rounded w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Notes (Optional)</label>
+                <input
+                  type="text"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                  className="border p-2 rounded w-full"
+                  placeholder="Additional notes"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button type="submit" disabled={submitting} className="bg-green-600 text-white px-6 py-2 rounded">
+                {submitting ? 'Creating...' : 'Create Order'}
+              </button>
+              <button type="button" onClick={() => setShowCreateForm(false)} className="bg-gray-300 px-6 py-2 rounded">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="bg-white shadow rounded-lg p-4 mb-4">
+        <div className="flex gap-4">
+          <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value as any)} className="border p-2 rounded">
+            <option value="all">All Time</option>
+            <option value="today">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+          </select>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)} className="border p-2 rounded">
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="partial">Partial</option>
+            <option value="paid">Paid</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Orders Table */}
       <div className="bg-white shadow rounded-lg overflow-hidden">
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
               <th className="p-4 text-left">ID</th>
               <th className="p-4 text-left">Customer</th>
+              <th className="p-4 text-left">Phone</th>
+              <th className="p-4 text-left">Total</th>
+              <th className="p-4 text-left">Advance</th>
+              <th className="p-4 text-left">Balance</th>
+              <th className="p-4 text-left">Date</th>
               <th className="p-4 text-left">Status</th>
               <th className="p-4 text-left">Actions</th>
             </tr>
@@ -289,16 +440,268 @@ export default function AdminOrdersPage() {
               <tr key={o.id} className="border-t">
                 <td className="p-4">#{o.id}</td>
                 <td className="p-4">{o.customer_name}</td>
+                <td className="p-4">{o.customer_phone}</td>
+                <td className="p-4">{formatCurrency(parseFloat(o.total_amount))}</td>
+                <td className="p-4">{formatCurrency(parseFloat(o.advance_payment))}</td>
+                <td className="p-4">{formatCurrency(parseFloat(o.balance))}</td>
+                <td className="p-4">{new Date(o.created_at).toLocaleDateString()}</td>
                 <td className="p-4">{getStatusBadge(o.status)}</td>
                 <td className="p-4 flex gap-2">
-                   <button onClick={() => downloadInvoice(o.id)} className="text-green-600">PDF</button>
-                   <button onClick={() => handleCancelOrder(o.id)} className="text-red-600">Cancel</button>
+                   <button onClick={() => {
+                     setSelectedOrder(o)
+                     setFormData({
+                       customerName: o.customer_name,
+                       customerEmail: o.customer_email,
+                       customerPhone: o.customer_phone,
+                       selectedItems: o.items.map((item: any) => ({
+                         itemId: item.item_id,
+                         quantity: item.quantity_kg
+                       })),
+                       advancePayment: o.advance_payment,
+                       deliveryDate: o.delivery_date || '',
+                       notes: o.notes || ''
+                     })
+                     setShowEditModal(true)
+                   }} className="text-blue-600 hover:underline">Edit</button>
+                   <button onClick={() => {
+                     setSelectedOrder(o)
+                     setShowDetailsModal(true)
+                   }} className="text-indigo-600 hover:underline">View</button>
+                   <button onClick={() => downloadInvoice(o.id)} className="text-green-600 hover:underline">PDF</button>
+                   <button onClick={() => handleCancelOrder(o.id)} className="text-red-600 hover:underline">Cancel</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* Edit Order Modal */}
+      {showEditModal && selectedOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">Edit Order #{selectedOrder.id}</h2>
+            <form onSubmit={handleUpdateOrder}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <input
+                  type="text"
+                  placeholder="Customer Name"
+                  value={formData.customerName}
+                  onChange={(e) => setFormData({...formData, customerName: e.target.value})}
+                  className="border p-2 rounded"
+                  required
+                />
+                <input
+                  type="email"
+                  placeholder="Customer Email"
+                  value={formData.customerEmail}
+                  onChange={(e) => setFormData({...formData, customerEmail: e.target.value})}
+                  className="border p-2 rounded"
+                  required
+                />
+                <input
+                  type="tel"
+                  placeholder="Customer Phone"
+                  value={formData.customerPhone}
+                  onChange={(e) => setFormData({...formData, customerPhone: e.target.value})}
+                  className="border p-2 rounded"
+                  required
+                />
+              </div>
+
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-semibold">Order Items</h3>
+                  <button type="button" onClick={handleAddItem} className="bg-blue-500 text-white px-3 py-1 rounded text-sm">
+                    + Add Item
+                  </button>
+                </div>
+                {formData.selectedItems.map((orderItem, index) => (
+                  <div key={index} className="flex gap-2 mb-2">
+                    <select
+                      value={orderItem.itemId}
+                      onChange={(e) => handleItemChange(index, 'itemId', parseInt(e.target.value))}
+                      className="border p-2 rounded flex-1"
+                    >
+                      {items.map(item => (
+                        <option key={item.id} value={item.id}>{item.name} - {formatCurrency(parseFloat(item.price_per_kg))}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      min="0.1"
+                      step="0.1"
+                      value={orderItem.quantity}
+                      onChange={(e) => handleItemChange(index, 'quantity', parseFloat(e.target.value))}
+                      className="border p-2 rounded w-24"
+                      placeholder="Qty"
+                    />
+                    <button type="button" onClick={() => handleRemoveItem(index)} className="bg-red-500 text-white px-3 py-2 rounded">
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Total Amount</label>
+                  <input
+                    type="text"
+                    value={formatCurrency(calculateTotal())}
+                    className="border p-2 rounded w-full bg-gray-100"
+                    readOnly
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Advance Payment</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.advancePayment}
+                    onChange={(e) => setFormData({...formData, advancePayment: e.target.value})}
+                    className="border p-2 rounded w-full"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Delivery Date (Optional)</label>
+                  <input
+                    type="date"
+                    value={formData.deliveryDate}
+                    onChange={(e) => setFormData({...formData, deliveryDate: e.target.value})}
+                    className="border p-2 rounded w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Notes (Optional)</label>
+                  <input
+                    type="text"
+                    value={formData.notes}
+                    onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                    className="border p-2 rounded w-full"
+                    placeholder="Additional notes"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button type="submit" disabled={submitting} className="bg-green-600 text-white px-6 py-2 rounded">
+                  {submitting ? 'Updating...' : 'Update Order'}
+                </button>
+                <button type="button" onClick={() => {
+                  setShowEditModal(false)
+                  setSelectedOrder(null)
+                }} className="bg-gray-300 px-6 py-2 rounded">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Details Modal */}
+      {showDetailsModal && selectedOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Order Details #{selectedOrder.id}</h2>
+              <button onClick={() => setShowDetailsModal(false)} className="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">Customer Name</p>
+                  <p className="font-semibold">{selectedOrder.customer_name}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Email</p>
+                  <p className="font-semibold">{selectedOrder.customer_email}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Phone</p>
+                  <p className="font-semibold">{selectedOrder.customer_phone}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Order Date</p>
+                  <p className="font-semibold">{new Date(selectedOrder.created_at).toLocaleString()}</p>
+                </div>
+                {selectedOrder.delivery_date && (
+                  <div>
+                    <p className="text-sm text-gray-600">Delivery Date</p>
+                    <p className="font-semibold">{selectedOrder.delivery_date}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm text-gray-600">Status</p>
+                  <p className="font-semibold">{getStatusBadge(selectedOrder.status)}</p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold mb-2">Order Items</h3>
+                <table className="w-full border">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="p-2 text-left border">Item</th>
+                      <th className="p-2 text-left border">Quantity</th>
+                      <th className="p-2 text-left border">Rate</th>
+                      <th className="p-2 text-left border">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedOrder.items.map((item: any, idx: number) => (
+                      <tr key={idx}>
+                        <td className="p-2 border">{item.item_name}</td>
+                        <td className="p-2 border">{item.quantity_kg} kg</td>
+                        <td className="p-2 border">{formatCurrency(item.price_per_kg)}</td>
+                        <td className="p-2 border">{formatCurrency(item.subtotal)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="border-t pt-4">
+                <div className="flex justify-between mb-2">
+                  <span className="font-semibold">Total Amount:</span>
+                  <span className="font-bold">{formatCurrency(parseFloat(selectedOrder.total_amount))}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span className="font-semibold">Advance Payment:</span>
+                  <span>{formatCurrency(parseFloat(selectedOrder.advance_payment))}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span className="font-semibold">Balance Due:</span>
+                  <span className="text-red-600 font-bold">{formatCurrency(parseFloat(selectedOrder.balance))}</span>
+                </div>
+              </div>
+
+              {selectedOrder.notes && (
+                <div>
+                  <p className="text-sm text-gray-600">Notes</p>
+                  <p className="font-semibold">{selectedOrder.notes}</p>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <button onClick={() => downloadInvoice(selectedOrder.id)} className="bg-green-600 text-white px-4 py-2 rounded">
+                  Download Invoice
+                </button>
+                <button onClick={() => setShowDetailsModal(false)} className="bg-gray-300 px-4 py-2 rounded">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -109,7 +109,7 @@ async def create_item(
         return {
             "id": new_item.id,
             "name": new_item.name,
-            "unit_type": new_item.unit_type.value,
+            "unit_type": new_item.unit_type.value if hasattr(new_item.unit_type, 'value') else new_item.unit_type,
             "price_per_kg": str(new_item.price_per_kg),
             "image_url": new_item.image_url,
             "cloudinary_public_id": new_item.cloudinary_public_id,
@@ -203,7 +203,7 @@ async def update_item(
         return {
             "id": item.id,
             "name": item.name,
-            "unit_type": item.unit_type.value,
+            "unit_type": item.unit_type.value if hasattr(item.unit_type, 'value') else item.unit_type,
             "price_per_kg": str(item.price_per_kg),
             "image_url": item.image_url,
             "cloudinary_public_id": item.cloudinary_public_id,
