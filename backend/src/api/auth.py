@@ -42,12 +42,6 @@ def signup(
 ):
     """
     Create a new admin user account.
-
-    - **name**: Full name of the administrator
-    - **email**: Unique email address (used for login)
-    - **password**: Password (will be hashed before storage)
-
-    Returns JWT token and user information.
     """
     # Check if user with email already exists
     existing_user = session.exec(
@@ -60,8 +54,9 @@ def signup(
             detail="User with this email already exists"
         )
 
-    # Hash password
-    hashed_password = hash_password(request.password)
+    # FIX: Ensure password is within bcrypt limits (72 bytes)
+    safe_password = request.password[:72]
+    hashed_password = hash_password(safe_password)
 
     # Create new user
     user = User(
@@ -96,19 +91,18 @@ def login(
 ):
     """
     Authenticate user and return JWT token.
-
-    - **email**: User's email address
-    - **password**: User's password
-
-    Returns JWT token and user information.
     """
     # Find user by email
     user = session.exec(
         select(User).where(User.email == request.email)
     ).first()
 
+    # FIX: Truncate incoming password to 72 chars to prevent Bcrypt ValueError
+    # This ensures that even if a long string is sent, it won't crash the server.
+    safe_password = request.password[:72]
+
     # Verify user exists and password is correct
-    if not user or not verify_password(request.password, user.password_hash):
+    if not user or not verify_password(safe_password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -134,9 +128,5 @@ def login(
 def logout():
     """
     Logout endpoint (client-side token removal).
-
-    Note: JWT tokens are stateless. The client must remove the token
-    from storage (localStorage) to log out. This endpoint is provided
-    for consistency but doesn't need to do anything server-side.
     """
     return {"message": "Logged out successfully. Remove token from client storage."}
