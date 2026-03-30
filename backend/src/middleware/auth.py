@@ -12,12 +12,11 @@ from ..models import User
 
 security = HTTPBearer()
 
-# Naya Simple Hashing Function (Bcrypt ki zaroorat nahi)
 def hash_password(password: str) -> str:
+    # Bcrypt ki jagah SHA-256 use kar rahe hain (No length limit)
     return hashlib.sha256(password.encode()).hexdigest()
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    # Dono ko SHA-256 se compare karein
     return hash_password(plain_password) == hashed_password
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -26,4 +25,13 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.better_auth_secret, algorithm=settings.jwt_algorithm)
 
-# ... baaki verify_jwt aur require_admin functions wahi rehne dein jo pehle thay ...
+def verify_jwt(credentials: HTTPAuthorizationCredentials = Depends(security), session: Session = Depends(get_session)) -> User:
+    try:
+        payload = jwt.decode(credentials.credentials, settings.better_auth_secret, algorithms=[settings.jwt_algorithm])
+        email: str = payload.get("sub")
+        if email is None: raise HTTPException(status_code=401)
+    except JWTError: raise HTTPException(status_code=401)
+    
+    user = session.exec(select(User).where(User.email == email)).first()
+    if user is None: raise HTTPException(status_code=401)
+    return user
