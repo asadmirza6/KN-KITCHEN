@@ -35,6 +35,13 @@ class OrderItemRequest(BaseModel):
     price_per_kg: float
 
 
+class ManualItemRequest(BaseModel):
+    """Manual/custom item not in the menu"""
+    name: str
+    quantity_kg: float
+    price_per_kg: float
+
+
 class CreateOrderRequest(BaseModel):
     """Request model for creating a new order"""
     customer_name: str
@@ -42,6 +49,7 @@ class CreateOrderRequest(BaseModel):
     customer_phone: str
     customer_address: str
     items: List[OrderItemRequest]
+    manual_items: List[ManualItemRequest] = []
     total_amount: float
     advance_payment: float = 0.0
     delivery_date: str | None = None
@@ -55,6 +63,9 @@ class CreateOrderRequest(BaseModel):
                 "customer_phone": "1234567890",
                 "customer_address": "123 Main St, City",
                 "items": [],
+                "manual_items": [
+                    {"name": "Plastic Boxes", "quantity_kg": 10, "price_per_kg": 50}
+                ],
                 "total_amount": 1000,
                 "advance_payment": 500
             }
@@ -68,6 +79,7 @@ class UpdateOrderRequest(BaseModel):
     customer_phone: str | None = None
     customer_address: str | None = None
     items: List[OrderItemRequest] | None = None
+    manual_items: List[ManualItemRequest] | None = None
     total_amount: float | None = None
     advance_payment: float | None = None
     delivery_date: str | None = None
@@ -105,6 +117,17 @@ def create_order(
         }
         for item in request.items
     ]
+
+    # Add manual items to items_data
+    for manual_item in request.manual_items:
+        items_data.append({
+            "item_id": None,
+            "item_name": manual_item.name,
+            "quantity_kg": manual_item.quantity_kg,
+            "price_per_kg": manual_item.price_per_kg,
+            "subtotal": manual_item.quantity_kg * manual_item.price_per_kg,
+            "is_manual": True
+        })
 
     # Calculate balance
     balance = Decimal(str(request.total_amount)) - Decimal(str(request.advance_payment))
@@ -326,6 +349,35 @@ def update_order(
             }
             for item in request.items
         ]
+
+        # Add manual items if provided
+        if request.manual_items is not None:
+            for manual_item in request.manual_items:
+                items_data.append({
+                    "item_id": None,
+                    "item_name": manual_item.name,
+                    "quantity_kg": manual_item.quantity_kg,
+                    "price_per_kg": manual_item.price_per_kg,
+                    "subtotal": manual_item.quantity_kg * manual_item.price_per_kg,
+                    "is_manual": True
+                })
+
+        order.items = items_data
+    elif request.manual_items is not None:
+        # Update only manual items if items not provided
+        items_data = order.items if order.items else []
+        # Remove existing manual items
+        items_data = [item for item in items_data if not item.get("is_manual", False)]
+        # Add new manual items
+        for manual_item in request.manual_items:
+            items_data.append({
+                "item_id": None,
+                "item_name": manual_item.name,
+                "quantity_kg": manual_item.quantity_kg,
+                "price_per_kg": manual_item.price_per_kg,
+                "subtotal": manual_item.quantity_kg * manual_item.price_per_kg,
+                "is_manual": True
+            })
         order.items = items_data
 
     # Update amounts if provided

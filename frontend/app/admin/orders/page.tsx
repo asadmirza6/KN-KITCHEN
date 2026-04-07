@@ -14,6 +14,12 @@ interface OrderItem {
   quantity: number
 }
 
+interface ManualItem {
+  name: string
+  quantity: number
+  price: number
+}
+
 interface Order {
   id: number
   user_id: number
@@ -38,6 +44,7 @@ interface OrderFormData {
   customerPhone: string
   customerAddress: string
   selectedItems: OrderItem[]
+  manualItems: ManualItem[]
   advancePayment: string
   deliveryDate: string
   notes: string
@@ -68,6 +75,7 @@ export default function AdminOrdersPage() {
     customerPhone: '',
     customerAddress: '',
     selectedItems: [],
+    manualItems: [],
     advancePayment: '',
     deliveryDate: '',
     notes: ''
@@ -154,18 +162,46 @@ export default function AdminOrdersPage() {
     }))
   }
 
+  const handleAddManualItem = () => {
+    setFormData(prev => ({
+      ...prev,
+      manualItems: [...prev.manualItems, { name: '', quantity: 1, price: 0 }]
+    }))
+  }
+
+  const handleRemoveManualItem = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      manualItems: prev.manualItems.filter((_, i) => i !== index)
+    }))
+  }
+
+  const handleManualItemChange = (index: number, field: 'name' | 'quantity' | 'price', value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      manualItems: prev.manualItems.map((item, i) =>
+        i === index ? { ...item, [field]: value } : item
+      )
+    }))
+  }
+
   const calculateTotal = () => {
-    return formData.selectedItems.reduce((total, orderItem) => {
+    const menuTotal = formData.selectedItems.reduce((total, orderItem) => {
       const item = items.find(i => i.id === orderItem.itemId)
       return item ? total + (parseFloat(item.price_per_kg) * orderItem.quantity) : total
     }, 0)
+
+    const manualTotal = formData.manualItems.reduce((total, item) =>
+      total + (item.price * item.quantity), 0)
+
+    return menuTotal + manualTotal
   }
 
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(''); setSuccess(''); setSubmitting(true)
     try {
-      if (formData.selectedItems.length === 0) throw new Error('Select at least one item')
+      if (formData.selectedItems.length === 0 && formData.manualItems.length === 0) throw new Error('Select at least one item (menu or manual)')
       if (!formData.customerName || !formData.customerEmail || !formData.customerPhone || !formData.customerAddress) throw new Error('Fill all customer details')
 
       const totalAmount = calculateTotal()
@@ -185,6 +221,11 @@ export default function AdminOrdersPage() {
             price_per_kg: parseFloat(item?.price_per_kg || '0')
           }
         }),
+        manual_items: formData.manualItems.map(mi => ({
+          name: mi.name,
+          quantity_kg: mi.quantity,
+          price_per_kg: mi.price
+        })),
         total_amount: totalAmount,
         advance_payment: advanceAmount,
         delivery_date: formData.deliveryDate || null,
@@ -193,7 +234,7 @@ export default function AdminOrdersPage() {
 
       await axios.post('/orders/', orderData)
       setSuccess('Order created!')
-      setFormData({ customerName: '', customerEmail: '', customerPhone: '', customerAddress: '', selectedItems: [], advancePayment: '', deliveryDate: '', notes: '' })
+      setFormData({ customerName: '', customerEmail: '', customerPhone: '', customerAddress: '', selectedItems: [], manualItems: [], advancePayment: '', deliveryDate: '', notes: '' })
       setShowCreateForm(false)
       await loadData()
     } catch (err: any) {
@@ -224,6 +265,11 @@ export default function AdminOrdersPage() {
             price_per_kg: parseFloat(item?.price_per_kg || '0')
           }
         }),
+        manual_items: formData.manualItems.map(mi => ({
+          name: mi.name,
+          quantity_kg: mi.quantity,
+          price_per_kg: mi.price
+        })),
         total_amount: totalAmount,
         advance_payment: advanceAmount,
         delivery_date: formData.deliveryDate || null,
@@ -380,6 +426,52 @@ export default function AdminOrdersPage() {
               </div>
             </div>
 
+            <div className="mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-bold text-black">Manual Items</h3>
+                <button type="button" onClick={handleAddManualItem} className="bg-purple-500 text-white px-3 py-1 rounded text-sm font-bold hover:bg-purple-600">
+                  + Add Manual Item
+                </button>
+              </div>
+              <div className="max-h-40 overflow-y-auto border rounded p-2 bg-gray-50">
+                {formData.manualItems.map((item, index) => (
+                  <div key={index} className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      placeholder="Item name"
+                      value={item.name}
+                      onChange={(e) => handleManualItemChange(index, 'name', e.target.value)}
+                      className="border p-2 rounded flex-1 text-black font-bold"
+                      required
+                    />
+                    <input
+                      type="number"
+                      min="0.1"
+                      step="0.1"
+                      value={item.quantity}
+                      onChange={(e) => handleManualItemChange(index, 'quantity', parseFloat(e.target.value))}
+                      className="border p-2 rounded w-20 text-black font-bold"
+                      placeholder="Qty"
+                      required
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={item.price}
+                      onChange={(e) => handleManualItemChange(index, 'price', parseFloat(e.target.value))}
+                      className="border p-2 rounded w-24 text-black font-bold"
+                      placeholder="Price"
+                      required
+                    />
+                    <button type="button" onClick={() => handleRemoveManualItem(index)} className="bg-red-500 text-white px-3 py-2 rounded font-bold hover:bg-red-600">
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-bold text-black mb-1">Total Amount</label>
@@ -494,9 +586,14 @@ export default function AdminOrdersPage() {
                        customerEmail: o.customer_email,
                        customerPhone: o.customer_phone,
                        customerAddress: o.customer_address || '',
-                       selectedItems: o.items.map((item: any) => ({
+                       selectedItems: o.items.filter((item: any) => !item.is_manual).map((item: any) => ({
                          itemId: item.item_id,
                          quantity: item.quantity_kg
+                       })),
+                       manualItems: o.items.filter((item: any) => item.is_manual).map((item: any) => ({
+                         name: item.item_name,
+                         quantity: item.quantity_kg,
+                         price: item.price_per_kg
                        })),
                        advancePayment: o.advance_payment,
                        deliveryDate: o.delivery_date || '',
@@ -554,9 +651,14 @@ export default function AdminOrdersPage() {
                   customerEmail: o.customer_email,
                   customerPhone: o.customer_phone,
                   customerAddress: o.customer_address || '',
-                  selectedItems: o.items.map((item: any) => ({
+                  selectedItems: o.items.filter((item: any) => !item.is_manual).map((item: any) => ({
                     itemId: item.item_id,
                     quantity: item.quantity_kg
+                  })),
+                  manualItems: o.items.filter((item: any) => item.is_manual).map((item: any) => ({
+                    name: item.item_name,
+                    quantity: item.quantity_kg,
+                    price: item.price_per_kg
                   })),
                   advancePayment: o.advance_payment,
                   deliveryDate: o.delivery_date || '',
@@ -657,6 +759,52 @@ export default function AdminOrdersPage() {
                         placeholder="Qty"
                       />
                       <button type="button" onClick={() => handleRemoveItem(index)} className="bg-red-500 text-white px-3 py-2 rounded font-bold hover:bg-red-600">
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-bold text-black">Manual Items</h3>
+                  <button type="button" onClick={handleAddManualItem} className="bg-purple-500 text-white px-3 py-1 rounded text-sm font-bold hover:bg-purple-600">
+                    + Add Manual Item
+                  </button>
+                </div>
+                <div className="max-h-40 overflow-y-auto border rounded p-2 bg-gray-50">
+                  {formData.manualItems.map((item, index) => (
+                    <div key={index} className="flex gap-2 mb-2">
+                      <input
+                        type="text"
+                        placeholder="Item name"
+                        value={item.name}
+                        onChange={(e) => handleManualItemChange(index, 'name', e.target.value)}
+                        className="border p-2 rounded flex-1 text-black font-bold"
+                        required
+                      />
+                      <input
+                        type="number"
+                        min="0.1"
+                        step="0.1"
+                        value={item.quantity}
+                        onChange={(e) => handleManualItemChange(index, 'quantity', parseFloat(e.target.value))}
+                        className="border p-2 rounded w-20 text-black font-bold"
+                        placeholder="Qty"
+                        required
+                      />
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.price}
+                        onChange={(e) => handleManualItemChange(index, 'price', parseFloat(e.target.value))}
+                        className="border p-2 rounded w-24 text-black font-bold"
+                        placeholder="Price"
+                        required
+                      />
+                      <button type="button" onClick={() => handleRemoveManualItem(index)} className="bg-red-500 text-white px-3 py-2 rounded font-bold hover:bg-red-600">
                         Remove
                       </button>
                     </div>
