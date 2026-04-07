@@ -4,6 +4,7 @@ Stores customer orders with items (JSON), amounts, and payments.
 """
 
 from sqlmodel import SQLModel, Field, Column, JSON
+from sqlalchemy import String
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from decimal import Decimal
@@ -34,6 +35,7 @@ class Order(SQLModel, table=True):
     customer_name: str = Field(max_length=255, nullable=False)
     customer_email: str = Field(max_length=255, nullable=False)
     customer_phone: str = Field(max_length=20, nullable=False)
+    customer_address: str = Field(max_length=500, nullable=False)
 
     # Store items as JSON: [{"item_id": 1, "item_name": "...", "quantity_kg": 10, "price_per_kg": 100, "subtotal": 1000}, ...]
     items: List[Dict[str, Any]] = Field(

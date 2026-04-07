@@ -6,6 +6,7 @@ Handles order creation and management (admin only).
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select
+from sqlalchemy import insert, text
 from typing import List
 from pydantic import BaseModel
 from decimal import Decimal
@@ -39,11 +40,25 @@ class CreateOrderRequest(BaseModel):
     customer_name: str
     customer_email: str
     customer_phone: str
+    customer_address: str
     items: List[OrderItemRequest]
     total_amount: float
     advance_payment: float = 0.0
     delivery_date: str | None = None
     notes: str | None = None
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "customer_name": "John Doe",
+                "customer_email": "john@example.com",
+                "customer_phone": "1234567890",
+                "customer_address": "123 Main St, City",
+                "items": [],
+                "total_amount": 1000,
+                "advance_payment": 500
+            }
+        }
 
 
 class UpdateOrderRequest(BaseModel):
@@ -51,6 +66,7 @@ class UpdateOrderRequest(BaseModel):
     customer_name: str | None = None
     customer_email: str | None = None
     customer_phone: str | None = None
+    customer_address: str | None = None
     items: List[OrderItemRequest] | None = None
     total_amount: float | None = None
     advance_payment: float | None = None
@@ -71,6 +87,12 @@ def create_order(
     Requires JWT authentication.
     Saves order to database with items, amounts, and customer details.
     """
+
+    # Debug: Print received data
+    import json
+    print(f"DEBUG: Full request data: {json.dumps(request.model_dump(), default=str)}")
+    print(f"DEBUG: customer_address value: '{request.customer_address}'")
+    print(f"DEBUG: customer_address type: {type(request.customer_address)}")
 
     # Convert items to dict format for JSON storage
     items_data = [
@@ -95,13 +117,14 @@ def create_order(
     else:
         status = "pending"
 
-    # Create order
+    # Create order using ORM
     order = Order(
         user_id=current_user.id,
         created_by_name=current_user.name,
         customer_name=request.customer_name,
         customer_email=request.customer_email,
         customer_phone=request.customer_phone,
+        customer_address=request.customer_address,
         items=items_data,
         total_amount=Decimal(str(request.total_amount)),
         advance_payment=Decimal(str(request.advance_payment)),
@@ -115,11 +138,16 @@ def create_order(
     session.commit()
     session.refresh(order)
 
+    # Debug: Check what was saved
+    print(f"DEBUG: After commit - order.customer_address = '{order.customer_address}'")
+    print(f"DEBUG: After commit - order.customer_address type = {type(order.customer_address)}")
+
     return {
         "id": order.id,
         "customer_name": order.customer_name,
         "customer_email": order.customer_email,
         "customer_phone": order.customer_phone,
+        "customer_address": order.customer_address,
         "items": order.items,
         "total_amount": str(order.total_amount),
         "advance_payment": str(order.advance_payment),
@@ -149,6 +177,7 @@ def get_orders(
             "customer_name": order.customer_name,
             "customer_email": order.customer_email,
             "customer_phone": order.customer_phone,
+            "customer_address": order.customer_address,
             "items": order.items,
             "total_amount": str(order.total_amount),
             "advance_payment": str(order.advance_payment),
@@ -241,6 +270,7 @@ def get_order(
         "customer_name": order.customer_name,
         "customer_email": order.customer_email,
         "customer_phone": order.customer_phone,
+        "customer_address": order.customer_address,
         "items": order.items,
         "total_amount": str(order.total_amount),
         "advance_payment": str(order.advance_payment),
@@ -277,6 +307,8 @@ def update_order(
         order.customer_email = request.customer_email
     if request.customer_phone is not None:
         order.customer_phone = request.customer_phone
+    if request.customer_address is not None:
+        order.customer_address = request.customer_address
     if request.delivery_date is not None:
         order.delivery_date = request.delivery_date
     if request.notes is not None:
@@ -326,6 +358,7 @@ def update_order(
         "customer_name": order.customer_name,
         "customer_email": order.customer_email,
         "customer_phone": order.customer_phone,
+        "customer_address": order.customer_address,
         "items": order.items,
         "total_amount": str(order.total_amount),
         "advance_payment": str(order.advance_payment),
@@ -505,6 +538,7 @@ def download_invoice(
         ['Customer Name:', order.customer_name],
         ['Email:', order.customer_email],
         ['Phone:', order.customer_phone],
+        ['Address:', order.customer_address],
     ]
 
     if order.delivery_date:
