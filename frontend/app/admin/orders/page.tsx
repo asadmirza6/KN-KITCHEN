@@ -29,6 +29,7 @@ interface Order {
   customer_phone: string
   customer_address: string
   items: any[]
+  manual_items: any[]
   total_amount: string
   advance_payment: string
   balance: string
@@ -938,6 +939,21 @@ export default function AdminOrdersPage() {
                           <td className="p-2 border text-black font-bold">{formatCurrency(item.subtotal)}</td>
                         </tr>
                       ))}
+                      {selectedOrder.manual_items && selectedOrder.manual_items.length > 0 && (
+                        <>
+                          <tr className="bg-yellow-50">
+                            <td colSpan={4} className="p-2 border text-black font-bold text-center">Manual Items</td>
+                          </tr>
+                          {selectedOrder.manual_items.map((item: any, idx: number) => (
+                            <tr key={`manual-${idx}`}>
+                              <td className="p-2 border text-black font-bold">{item.name}</td>
+                              <td className="p-2 border text-black font-bold">{item.quantity_kg} kg</td>
+                              <td className="p-2 border text-black font-bold">{formatCurrency(item.price_per_kg)}</td>
+                              <td className="p-2 border text-black font-bold">{formatCurrency(item.subtotal)}</td>
+                            </tr>
+                          ))}
+                        </>
+                      )}
                     </tbody>
                   </table>
                 </div>

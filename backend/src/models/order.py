@@ -42,6 +42,12 @@ class Order(SQLModel, table=True):
         sa_column=Column(JSON, nullable=False)
     )
 
+    # Store manual items as JSON: [{"name": "Plastic Box", "quantity_kg": 2, "price_per_kg": 50, "subtotal": 100}, ...]
+    manual_items: List[Dict[str, Any]] = Field(
+        sa_column=Column(JSON, nullable=True, default=[]),
+        default=[]
+    )
+
     # Use Decimal for monetary values (precision matters)
     total_amount: Decimal = Field(
         max_digits=10,

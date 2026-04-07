@@ -140,6 +140,17 @@ def create_order(
     else:
         status = "pending"
 
+    # Convert manual items to dict format for JSON storage
+    manual_items_data = [
+        {
+            "name": item.name,
+            "quantity_kg": item.quantity_kg,
+            "price_per_kg": item.price_per_kg,
+            "subtotal": item.quantity_kg * item.price_per_kg
+        }
+        for item in request.manual_items
+    ]
+
     # Create order using ORM
     order = Order(
         user_id=current_user.id,
@@ -149,6 +160,7 @@ def create_order(
         customer_phone=request.customer_phone,
         customer_address=request.customer_address,
         items=items_data,
+        manual_items=manual_items_data,
         total_amount=Decimal(str(request.total_amount)),
         advance_payment=Decimal(str(request.advance_payment)),
         balance=balance,
@@ -172,6 +184,7 @@ def create_order(
         "customer_phone": order.customer_phone,
         "customer_address": order.customer_address,
         "items": order.items,
+        "manual_items": order.manual_items,
         "total_amount": str(order.total_amount),
         "advance_payment": str(order.advance_payment),
         "balance": str(order.balance),
@@ -295,6 +308,7 @@ def get_order(
         "customer_phone": order.customer_phone,
         "customer_address": order.customer_address,
         "items": order.items,
+        "manual_items": order.manual_items,
         "total_amount": str(order.total_amount),
         "advance_payment": str(order.advance_payment),
         "balance": str(order.balance),
@@ -349,36 +363,20 @@ def update_order(
             }
             for item in request.items
         ]
-
-        # Add manual items if provided
-        if request.manual_items is not None:
-            for manual_item in request.manual_items:
-                items_data.append({
-                    "item_id": None,
-                    "item_name": manual_item.name,
-                    "quantity_kg": manual_item.quantity_kg,
-                    "price_per_kg": manual_item.price_per_kg,
-                    "subtotal": manual_item.quantity_kg * manual_item.price_per_kg,
-                    "is_manual": True
-                })
-
         order.items = items_data
-    elif request.manual_items is not None:
-        # Update only manual items if items not provided
-        items_data = order.items if order.items else []
-        # Remove existing manual items
-        items_data = [item for item in items_data if not item.get("is_manual", False)]
-        # Add new manual items
-        for manual_item in request.manual_items:
-            items_data.append({
-                "item_id": None,
-                "item_name": manual_item.name,
-                "quantity_kg": manual_item.quantity_kg,
-                "price_per_kg": manual_item.price_per_kg,
-                "subtotal": manual_item.quantity_kg * manual_item.price_per_kg,
-                "is_manual": True
-            })
-        order.items = items_data
+
+    # Update manual items if provided
+    if request.manual_items is not None:
+        manual_items_data = [
+            {
+                "name": item.name,
+                "quantity_kg": item.quantity_kg,
+                "price_per_kg": item.price_per_kg,
+                "subtotal": item.quantity_kg * item.price_per_kg
+            }
+            for item in request.manual_items
+        ]
+        order.manual_items = manual_items_data
 
     # Update amounts if provided
     if request.total_amount is not None:
@@ -412,6 +410,7 @@ def update_order(
         "customer_phone": order.customer_phone,
         "customer_address": order.customer_address,
         "items": order.items,
+        "manual_items": order.manual_items,
         "total_amount": str(order.total_amount),
         "advance_payment": str(order.advance_payment),
         "balance": str(order.balance),
@@ -628,6 +627,16 @@ def download_invoice(
             f"Rs {float(item['price_per_kg']):,.2f}",
             f"Rs {float(item['subtotal']):,.2f}"
         ])
+
+    # Add manual items to the table
+    if order.manual_items:
+        for item in order.manual_items:
+            items_data.append([
+                item['name'],
+                f"{item['quantity_kg']:.2f}",
+                f"Rs {float(item['price_per_kg']):,.2f}",
+                f"Rs {float(item['subtotal']):,.2f}"
+            ])
 
     items_table = Table(items_data, colWidths=[3*inch, 1.5*inch, 1.5*inch, 1.5*inch])
     items_table.setStyle(TableStyle([
