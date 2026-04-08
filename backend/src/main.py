@@ -57,22 +57,27 @@ async def startup_validation():
     print("="*60 + "\n")
 
 
-# Configure CORS
+# ==========================================
+# CONFIGURE CORS (Updated for Production)
+# ==========================================
 cors_origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "localhost:3000",
+    "https://kn-kitchen.vercel.app",  # Aapka Vercel URL
+    "https://kn-kitchen-frontend.vercel.app", # Alternative Vercel domain agar hai
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins,
+    allow_origins=["*"], # TESTING KE LIYE: Is se har domain allow ho jayega
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
     expose_headers=["*"],
     max_age=3600,
 )
+# ==========================================
 
 
 # Mount uploads directory as static files
@@ -85,12 +90,8 @@ if os.path.exists(uploads_dir):
 def health_check(session: Session = Depends(get_session)):
     """
     Health check endpoint that verifies database connectivity.
-
-    Returns:
-        dict: Status and database connection info
     """
     try:
-        # Test database connection with a simple query
         session.exec(select(1))
         return {
             "status": "healthy",
@@ -124,4 +125,4 @@ app.include_router(items.router, prefix="/items", tags=["Items"])
 app.include_router(media.router, prefix="/media", tags=["Media"])
 app.include_router(albums.router, prefix="/albums", tags=["Albums"])
 app.include_router(orders.router, prefix="/orders", tags=["Orders"])
-app.include_router(users.router, prefix="/users", tags=["Users"])
+app.include_router(users.router, prefix="/users", tags=["Users"])   
