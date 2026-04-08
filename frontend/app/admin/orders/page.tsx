@@ -178,10 +178,16 @@ export default function AdminOrdersPage() {
   }
 
   const handleManualItemChange = (index: number, field: 'name' | 'quantity' | 'price', value: any) => {
+    // Prevent NaN values for numeric fields
+    let sanitizedValue = value
+    if (field === 'quantity' || field === 'price') {
+      sanitizedValue = isNaN(value) ? 0 : value
+    }
+
     setFormData(prev => ({
       ...prev,
       manualItems: prev.manualItems.map((item, i) =>
-        i === index ? { ...item, [field]: value } : item
+        i === index ? { ...item, [field]: sanitizedValue } : item
       )
     }))
   }
@@ -326,7 +332,7 @@ export default function AdminOrdersPage() {
   if (loading) return <div className="p-10 text-center text-black font-bold">Loading...</div>
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="min-h-screen bg-transparent p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <button onClick={() => router.push('/admin')} className="text-indigo-600 font-bold hover:text-indigo-800">← Back</button>
@@ -449,8 +455,8 @@ export default function AdminOrdersPage() {
                       type="number"
                       min="0.1"
                       step="0.1"
-                      value={item.quantity}
-                      onChange={(e) => handleManualItemChange(index, 'quantity', parseFloat(e.target.value))}
+                      value={isNaN(item.quantity) ? '' : item.quantity}
+                      onChange={(e) => handleManualItemChange(index, 'quantity', parseFloat(e.target.value) || 0)}
                       className="border p-2 rounded w-20 text-black font-bold"
                       placeholder="Qty"
                       required
@@ -459,8 +465,8 @@ export default function AdminOrdersPage() {
                       type="number"
                       min="0"
                       step="0.01"
-                      value={item.price}
-                      onChange={(e) => handleManualItemChange(index, 'price', parseFloat(e.target.value))}
+                      value={isNaN(item.price) ? '' : item.price}
+                      onChange={(e) => handleManualItemChange(index, 'price', parseFloat(e.target.value) || 0)}
                       className="border p-2 rounded w-24 text-black font-bold"
                       placeholder="Price"
                       required
@@ -591,8 +597,8 @@ export default function AdminOrdersPage() {
                          itemId: item.item_id,
                          quantity: item.quantity_kg
                        })),
-                       manualItems: o.items.filter((item: any) => item.is_manual).map((item: any) => ({
-                         name: item.item_name,
+                       manualItems: (o.manual_items || []).map((item: any) => ({
+                         name: item.name,
                          quantity: item.quantity_kg,
                          price: item.price_per_kg
                        })),
@@ -789,8 +795,8 @@ export default function AdminOrdersPage() {
                         type="number"
                         min="0.1"
                         step="0.1"
-                        value={item.quantity}
-                        onChange={(e) => handleManualItemChange(index, 'quantity', parseFloat(e.target.value))}
+                        value={isNaN(item.quantity) ? '' : item.quantity}
+                        onChange={(e) => handleManualItemChange(index, 'quantity', parseFloat(e.target.value) || 0)}
                         className="border p-2 rounded w-20 text-black font-bold"
                         placeholder="Qty"
                         required
@@ -799,8 +805,8 @@ export default function AdminOrdersPage() {
                         type="number"
                         min="0"
                         step="0.01"
-                        value={item.price}
-                        onChange={(e) => handleManualItemChange(index, 'price', parseFloat(e.target.value))}
+                        value={isNaN(item.price) ? '' : item.price}
+                        onChange={(e) => handleManualItemChange(index, 'price', parseFloat(e.target.value) || 0)}
                         className="border p-2 rounded w-24 text-black font-bold"
                         placeholder="Price"
                         required

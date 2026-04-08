@@ -45,7 +45,15 @@
       "Bash(venv/Scripts/python.exe check_address.py)",
       "Bash(venv/Scripts/alembic.exe revision:*)",
       "Bash(venv/Scripts/alembic.exe upgrade:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(cd /d \"D:\\\\sp\\\\KN-KITCHEN\\\\backend\")",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(pkill -f \"uvicorn\\\\|npm\")",
+      "Bash(taskkill /F /IM python.exe /T)",
+      "Bash(PORT=3010 npm run dev)",
+      "Bash(ls -la *.md *.bat *.sh)",
+      "Bash(ls -1 *.md *.txt *.bat *.sh)"
     ]
   },
   "enableAllProjectMcpServers": true,

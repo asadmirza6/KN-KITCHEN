@@ -15,6 +15,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        {/* GLOBAL WATERMARK - Injected at root level */}
+        <div id="global-watermark"></div>
+
         <Navbar />
         {children}
       </body>

@@ -17,11 +17,45 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+from reportlab.platypus import Table as RLTable
 from reportlab.pdfgen import canvas
+import os
 
 from ..database import get_session
 from ..models import Order, User
 from ..middleware.auth import verify_jwt, require_admin, require_staff_or_admin
+
+
+class WatermarkedDocTemplate(SimpleDocTemplate):
+    """Custom PDF template with watermark support"""
+    def __init__(self, *args, watermark_path=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.watermark_path = watermark_path
+
+    def build(self, flowables, onFirstPage=None, onLaterPages=None, canvasmaker=canvas.Canvas):
+        """Build PDF with watermark on each page"""
+        def add_watermark(canvas_obj, doc):
+            if self.watermark_path and os.path.exists(self.watermark_path):
+                canvas_obj.saveState()
+                canvas_obj.setFillAlpha(0.08)
+
+                # Calculate watermark size (80% of page width, maintaining aspect ratio)
+                page_width = letter[0]
+                page_height = letter[1]
+                watermark_width = page_width * 0.8
+                watermark_height = watermark_width * 0.5  # Maintain 2:1 aspect ratio
+
+                # Center watermark on page
+                x = (page_width - watermark_width) / 2
+                y = (page_height - watermark_height) / 2
+
+                # Draw watermark behind all content
+                img = Image(self.watermark_path, width=watermark_width, height=watermark_height)
+                img.drawOn(canvas_obj, x, y)
+                canvas_obj.restoreState()
+
+        # Apply watermark to all pages
+        super().build(flowables, onFirstPage=add_watermark, onLaterPages=add_watermark, canvasmaker=canvasmaker)
 
 
 router = APIRouter()
@@ -118,16 +152,8 @@ def create_order(
         for item in request.items
     ]
 
-    # Add manual items to items_data
-    for manual_item in request.manual_items:
-        items_data.append({
-            "item_id": None,
-            "item_name": manual_item.name,
-            "quantity_kg": manual_item.quantity_kg,
-            "price_per_kg": manual_item.price_per_kg,
-            "subtotal": manual_item.quantity_kg * manual_item.price_per_kg,
-            "is_manual": True
-        })
+    # NOTE: Manual items are stored ONLY in manual_items field, NOT in items array
+    # This prevents duplicate entries in PDF and order display
 
     # Calculate balance
     balance = Decimal(str(request.total_amount)) - Decimal(str(request.advance_payment))
@@ -552,72 +578,75 @@ def download_invoice(
             detail="Order not found"
         )
 
-    # Create PDF in memory
+    # Create PDF in memory with watermark
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=0.5*inch, leftMargin=0.5*inch, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    logo_path = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'logo.jpeg')
+    doc = WatermarkedDocTemplate(
+        buffer,
+        pagesize=letter,
+        rightMargin=0.5*inch,
+        leftMargin=0.5*inch,
+        topMargin=0.5*inch,
+        bottomMargin=1.2*inch,
+        watermark_path=logo_path
+    )
 
     # Container for PDF elements
     elements = []
     styles = getSampleStyleSheet()
 
-    # Logo
-    import os
-    logo_path = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'logo.jpeg')
-    if os.path.exists(logo_path):
-        logo = Image(logo_path, width=2*inch, height=1*inch)
-        logo.hAlign = 'CENTER'
-        elements.append(logo)
-        elements.append(Spacer(1, 0.1*inch))
-
-    # Title
-    title_style = styles['Heading1']
-    title_style.alignment = 1  # Center alignment
-    title = Paragraph("<b>KN KITCHEN</b>", title_style)
-    elements.append(title)
+    # ===== HEADER SECTION =====
+    # Create header table: Date (right) and Invoice # (center)
+    header_data = [
+        [
+            f"Date: {order.created_at.strftime('%B %d, %Y')}",
+            f"<b>INVOICE #{order.id}</b>"
+        ]
+    ]
+    header_table = RLTable(header_data, colWidths=[3*inch, 3.9*inch])
+    header_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+        ('ALIGN', (1, 0), (1, 0), 'CENTER'),
+        ('FONTSIZE', (0, 0), (0, 0), 8),
+        ('FONTSIZE', (1, 0), (1, 0), 18),
+        ('FONTNAME', (1, 0), (1, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+        ('TOPPADDING', (0, 0), (-1, -1), 2),
+    ]))
+    elements.append(header_table)
     elements.append(Spacer(1, 0.2*inch))
 
-    # Invoice Header
-    invoice_header_style = styles['Heading2']
-    invoice_header_style.alignment = 1
-    invoice_header = Paragraph(f"INVOICE #{order.id}", invoice_header_style)
-    elements.append(invoice_header)
-    elements.append(Spacer(1, 0.3*inch))
-
-    # Order Information
-    info_data = [
-        ['Date:', order.created_at.strftime('%B %d, %Y')],
-        ['Customer Name:', order.customer_name],
-        ['Email:', order.customer_email],
-        ['Phone:', order.customer_phone],
-        ['Address:', order.customer_address],
+    # ===== CUSTOMER DETAILS BOX (Bordered) =====
+    customer_data = [
+        ['<b>CUSTOMER DETAILS</b>'],
+        [f'<b>Name:</b> {order.customer_name}'],
+        [f'<b>Phone:</b> {order.customer_phone}'],
+        [f'<b>Address:</b> {order.customer_address}'],
+        [f'<b>Email:</b> {order.customer_email}'],
     ]
 
     if order.delivery_date:
-        info_data.append(['Delivery Date:', order.delivery_date])
+        customer_data.append([f'<b>Delivery Date:</b> {order.delivery_date}'])
 
     if order.notes:
-        info_data.append(['Notes:', order.notes])
+        customer_data.append([f'<b>Special Note:</b> {order.notes}'])
 
-    info_data.append(['Order Taken By:', order.created_by_name])
-
-    info_table = Table(info_data, colWidths=[2*inch, 5*inch])
-    info_table.setStyle(TableStyle([
-        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-        ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-        ('TOPPADDING', (0, 0), (-1, -1), 6),
+    customer_table = Table(customer_data, colWidths=[6.9*inch])
+    customer_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E8E8E8')),  # Light grey header
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),  # Border around box
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
     ]))
-    elements.append(info_table)
-    elements.append(Spacer(1, 0.4*inch))
+    elements.append(customer_table)
+    elements.append(Spacer(1, 0.3*inch))
 
-    # Items Table Header
-    items_header_style = styles['Heading3']
-    items_header = Paragraph("<b>Order Items</b>", items_header_style)
-    elements.append(items_header)
-    elements.append(Spacer(1, 0.1*inch))
-
-    # Items Table
+    # ===== ITEMS TABLE (Centered) =====
     items_data = [['Item Name', 'Quantity (kg)', 'Rate (Rs/kg)', 'Amount (Rs)']]
 
     for item in order.items:
@@ -638,52 +667,55 @@ def download_invoice(
                 f"Rs {float(item['subtotal']):,.2f}"
             ])
 
-    items_table = Table(items_data, colWidths=[3*inch, 1.5*inch, 1.5*inch, 1.5*inch])
+    items_table = Table(items_data, colWidths=[2.8*inch, 1.3*inch, 1.4*inch, 1.4*inch])
     items_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#DC143C')),  # Red header
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),  # Black text on red
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 11),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
         ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 1), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-        ('TOPPADDING', (0, 0), (-1, -1), 8),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
+        ('FONTSIZE', (0, 1), (-1, -1), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F5F5F5')]),
     ]))
-    elements.append(items_table)
-    elements.append(Spacer(1, 0.3*inch))
 
-    # Payment Summary
+    # Center the items table with spacers
+    elements.append(Spacer(1, 0.2*inch))
+    elements.append(items_table)
+    elements.append(Spacer(1, 0.4*inch))
+
+    # ===== AMOUNT BOX (Right Aligned, near bottom) =====
     summary_data = [
-        ['Total Amount:', f"Rs {float(order.total_amount):,.2f}"],
+        ['Subtotal:', f"Rs {float(order.total_amount):,.2f}"],
         ['Advance Payment:', f"Rs {float(order.advance_payment):,.2f}"],
         ['Balance Due:', f"Rs {float(order.balance):,.2f}"],
-        ['Payment Status:', order.status.upper()],
+        ['Status:', order.status.upper()],
     ]
 
-    summary_table = Table(summary_data, colWidths=[4.5*inch, 2.5*inch])
+    summary_table = Table(summary_data, colWidths=[3.5*inch, 2.4*inch])
     summary_table.setStyle(TableStyle([
         ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
         ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
         ('FONTNAME', (1, 0), (1, -1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -2), 11),
-        ('FONTSIZE', (0, -2), (-1, -1), 12),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('FONTSIZE', (0, 0), (-1, -2), 9),
+        ('FONTSIZE', (0, -2), (-1, -1), 11),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
         ('LINEABOVE', (0, -2), (-1, -2), 2, colors.black),
     ]))
     elements.append(summary_table)
-    elements.append(Spacer(1, 0.5*inch))
+    elements.append(Spacer(1, 0.3*inch))
 
-    # Footer
+    # ===== THANK YOU MESSAGE (Absolute Bottom Center) =====
     footer_style = styles['Normal']
-    footer_style.alignment = 1
-    footer_style.fontSize = 9
+    footer_style.alignment = 1  # Center
+    footer_style.fontSize = 10
     footer_style.textColor = colors.grey
-    footer = Paragraph("Thank you for your business!<br/>KN KITCHEN - Quality Catering Services", footer_style)
+    footer = Paragraph("<i>Thank you for choosing KN KITCHEN</i>", footer_style)
     elements.append(footer)
 
     # Build PDF

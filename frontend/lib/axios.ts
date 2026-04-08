@@ -11,6 +11,7 @@ const axiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 })
 
 // Request interceptor: Add JWT token to all requests

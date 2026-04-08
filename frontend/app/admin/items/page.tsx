@@ -167,7 +167,7 @@ export default function AdminItemsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-transparent py-8">
       <Toast
         message={toast.message}
         type={toast.type}

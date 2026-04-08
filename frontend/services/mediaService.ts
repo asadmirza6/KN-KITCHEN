@@ -16,7 +16,7 @@ export async function fetchMedia(params?: FetchMediaParams): Promise<MediaAsset[
     queryParams.append('type', params.type)
   }
 
-  const url = `/media${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+  const url = `/media/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
   const response = await axios.get<MediaAsset[]>(url)
 
   return response.data
