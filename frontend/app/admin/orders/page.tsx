@@ -562,6 +562,7 @@ export default function AdminOrdersPage() {
           <thead className="bg-gray-200">
             <tr>
               <th className="p-4 text-left text-black font-bold">ID</th>
+              <th className="p-4 text-left text-black font-bold">Created By</th>
               <th className="p-4 text-left text-black font-bold">Customer</th>
               <th className="p-4 text-left text-black font-bold">Phone</th>
               <th className="p-4 text-left text-black font-bold">Address</th>
@@ -577,6 +578,7 @@ export default function AdminOrdersPage() {
             {filteredOrders.map(o => (
               <tr key={o.id} className="border-t hover:bg-gray-50">
                 <td className="p-4 text-black font-bold">#{o.id}</td>
+                <td className="p-4 text-black font-bold">{o.created_by_name}</td>
                 <td className="p-4 text-black">{o.customer_name}</td>
                 <td className="p-4 text-black">{o.customer_phone}</td>
                 <td className="p-4 text-black">{o.customer_address || 'N/A'}</td>

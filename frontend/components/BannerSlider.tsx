@@ -70,38 +70,40 @@ export default function BannerSlider() {
   }
 
   return (
-    <div className="w-full">
-      <Swiper
-        modules={[Autoplay, Pagination]}
-        spaceBetween={0}
-        slidesPerView={1}
-        autoplay={{
-          delay: 5000,
-          disableOnInteraction: false,
-        }}
-        pagination={{
-          clickable: true,
-        }}
-        loop={banners.length > 1}
-        className="h-96"
-      >
-        {banners.map((banner) => (
-          <SwiperSlide key={banner.id}>
-            <div className="relative w-full h-96">
-              <img
-                src={banner.image_url.startsWith('http') ? banner.image_url : `${process.env.NEXT_PUBLIC_API_URL}${banner.image_url}`}
-                alt={banner.title || 'Banner'}
-                className="w-full h-full object-cover"
-              />
-              {banner.title && (
-                <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-4">
-                  <h3 className="text-2xl font-bold">{banner.title}</h3>
-                </div>
-              )}
-            </div>
-          </SwiperSlide>
-        ))}
-      </Swiper>
+    <div className="w-full flex justify-center">
+      <div className="w-full max-w-7xl">
+        <Swiper
+          modules={[Autoplay, Pagination]}
+          spaceBetween={0}
+          slidesPerView={1}
+          autoplay={{
+            delay: 5000,
+            disableOnInteraction: false,
+          }}
+          pagination={{
+            clickable: true,
+          }}
+          loop={banners.length > 1}
+          className="w-full"
+        >
+          {banners.map((banner) => (
+            <SwiperSlide key={banner.id}>
+              <div className="relative w-full aspect-video sm:aspect-[16/6] lg:aspect-[16/5]">
+                <img
+                  src={banner.image_url.startsWith('http') ? banner.image_url : `${process.env.NEXT_PUBLIC_API_URL}${banner.image_url}`}
+                  alt={banner.title || 'Banner'}
+                  className="w-full h-full object-cover"
+                />
+                {banner.title && (
+                  <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 sm:p-4">
+                    <h3 className="text-lg sm:text-2xl font-bold">{banner.title}</h3>
+                  </div>
+                )}
+              </div>
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      </div>
     </div>
   )
 }

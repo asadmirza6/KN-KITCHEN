@@ -186,8 +186,11 @@ export default function AdminBannersPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Banner Image * (Recommended: 1920x600px)
+                  Banner Image * (Recommended Size: 1920x600px)
                 </label>
+                <p className="text-xs text-gray-500 mb-2">
+                  Best results: 1920x600px (16:5 ratio) • Max file size: 5MB • Formats: JPG, PNG, GIF, WebP
+                </p>
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/gif,image/webp"

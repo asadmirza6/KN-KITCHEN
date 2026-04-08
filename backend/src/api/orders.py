@@ -236,6 +236,7 @@ def get_orders(
     return [
         {
             "id": order.id,
+            "created_by_name": order.created_by_name,
             "customer_name": order.customer_name,
             "customer_email": order.customer_email,
             "customer_phone": order.customer_phone,
@@ -596,51 +597,65 @@ def download_invoice(
     styles = getSampleStyleSheet()
 
     # ===== HEADER SECTION =====
-    # Create header table: Date (right) and Invoice # (center)
-    header_data = [
-        [
-            f"Date: {order.created_at.strftime('%B %d, %Y')}",
-            f"<b>INVOICE #{order.id}</b>"
-        ]
-    ]
-    header_table = RLTable(header_data, colWidths=[3*inch, 3.9*inch])
-    header_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (0, 0), 'LEFT'),
-        ('ALIGN', (1, 0), (1, 0), 'CENTER'),
-        ('FONTSIZE', (0, 0), (0, 0), 8),
-        ('FONTSIZE', (1, 0), (1, 0), 18),
-        ('FONTNAME', (1, 0), (1, 0), 'Helvetica-Bold'),
+    # Invoice # in center at top
+    invoice_data = [["INVOICE #" + str(order.id)]]
+    invoice_table = RLTable(invoice_data, colWidths=[6.9*inch])
+    invoice_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+        ('FONTSIZE', (0, 0), (0, 0), 20),
+        ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+    ]))
+    elements.append(invoice_table)
+
+    # Date on right side
+    date_data = [[f"Date: {order.created_at.strftime('%B %d, %Y')}"]]
+    date_table = RLTable(date_data, colWidths=[6.9*inch])
+    date_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (0, 0), 'RIGHT'),
+        ('FONTSIZE', (0, 0), (0, 0), 9),
+        ('FONTNAME', (0, 0), (0, 0), 'Helvetica'),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
         ('TOPPADDING', (0, 0), (-1, -1), 2),
     ]))
-    elements.append(header_table)
-    elements.append(Spacer(1, 0.2*inch))
+    elements.append(date_table)
+    elements.append(Spacer(1, 0.3*inch))
 
     # ===== CUSTOMER DETAILS BOX (Bordered) =====
-    customer_data = [
-        ['<b>CUSTOMER DETAILS</b>'],
-        [f'<b>Name:</b> {order.customer_name}'],
-        [f'<b>Phone:</b> {order.customer_phone}'],
-        [f'<b>Address:</b> {order.customer_address}'],
-        [f'<b>Email:</b> {order.customer_email}'],
-    ]
+    # Add Customer Details heading
+    customer_heading_style = styles['Normal']
+    customer_heading_style.alignment = 1  # Center
+    customer_heading_style.fontSize = 12
+    customer_heading_style.fontName = 'Helvetica-Bold'
+    customer_heading = Paragraph("Customer Details", customer_heading_style)
+    elements.append(customer_heading)
+    elements.append(Spacer(1, 0.15*inch))
+
+    # Build customer details as one continuous text block
+    customer_text = f"Created By: {order.created_by_name}\n\n"
+    customer_text += f"Name: {order.customer_name}\n"
+    customer_text += f"Phone: {order.customer_phone}\n"
+    customer_text += f"Address: {order.customer_address}\n"
+    customer_text += f"Email: {order.customer_email}\n"
 
     if order.delivery_date:
-        customer_data.append([f'<b>Delivery Date:</b> {order.delivery_date}'])
+        customer_text += f"Delivery Date: {order.delivery_date}\n"
 
     if order.notes:
-        customer_data.append([f'<b>Special Note:</b> {order.notes}'])
+        customer_text += f"Special Note: {order.notes}\n"
 
+    # Create single cell with border
+    customer_data = [[customer_text]]
     customer_table = Table(customer_data, colWidths=[6.9*inch])
     customer_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E8E8E8')),  # Light grey header
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('FONTSIZE', (0, 0), (-1, -1), 9),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-        ('TOPPADDING', (0, 0), (-1, -1), 4),
-        ('LEFTPADDING', (0, 0), (-1, -1), 6),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),  # Border around box
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('LEFTPADDING', (0, 0), (-1, -1), 10),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+        ('GRID', (0, 0), (-1, -1), 1.5, colors.black),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
     ]))
     elements.append(customer_table)
@@ -680,15 +695,28 @@ def download_invoice(
         ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
         ('TOPPADDING', (0, 0), (-1, -1), 3),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F5F5F5')]),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.transparent),  # Transparent rows
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.transparent, colors.transparent]),
     ]))
 
     # Center the items table with spacers
     elements.append(Spacer(1, 0.2*inch))
-    elements.append(items_table)
-    elements.append(Spacer(1, 0.4*inch))
 
-    # ===== AMOUNT BOX (Right Aligned, near bottom) =====
+    # Add Order Items heading
+    items_heading_style = styles['Normal']
+    items_heading_style.alignment = 1  # Center
+    items_heading_style.fontSize = 12
+    items_heading_style.fontName = 'Helvetica-Bold'
+    items_heading = Paragraph("Order Items", items_heading_style)
+    elements.append(items_heading)
+    elements.append(Spacer(1, 0.15*inch))
+
+    elements.append(items_table)
+
+    # Add big spacer to push summary to bottom
+    elements.append(Spacer(1, 1.5*inch))
+
+    # ===== AMOUNT BOX (Right Aligned, at bottom) =====
     summary_data = [
         ['Subtotal:', f"Rs {float(order.total_amount):,.2f}"],
         ['Advance Payment:', f"Rs {float(order.advance_payment):,.2f}"],
@@ -708,14 +736,14 @@ def download_invoice(
         ('LINEABOVE', (0, -2), (-1, -2), 2, colors.black),
     ]))
     elements.append(summary_table)
-    elements.append(Spacer(1, 0.3*inch))
+    elements.append(Spacer(1, 0.2*inch))
 
-    # ===== THANK YOU MESSAGE (Absolute Bottom Center) =====
+    # ===== THANK YOU MESSAGE (Below Summary) =====
     footer_style = styles['Normal']
     footer_style.alignment = 1  # Center
     footer_style.fontSize = 10
     footer_style.textColor = colors.grey
-    footer = Paragraph("<i>Thank you for choosing KN KITCHEN</i>", footer_style)
+    footer = Paragraph("Thank you for choosing KN KITCHEN", footer_style)
     elements.append(footer)
 
     # Build PDF

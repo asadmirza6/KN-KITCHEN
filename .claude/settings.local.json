@@ -53,7 +53,8 @@
       "Bash(taskkill /F /IM python.exe /T)",
       "Bash(PORT=3010 npm run dev)",
       "Bash(ls -la *.md *.bat *.sh)",
-      "Bash(ls -1 *.md *.txt *.bat *.sh)"
+      "Bash(ls -1 *.md *.txt *.bat *.sh)",
+      "Bash(grep -E \"\\\\.\\(py|sql\\)$\")"
     ]
   },
   "enableAllProjectMcpServers": true,
