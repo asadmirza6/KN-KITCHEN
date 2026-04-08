@@ -60,17 +60,18 @@ async def startup_validation():
 # ==========================================
 # CONFIGURE CORS (Updated for Production)
 # ==========================================
+# In links ko check karlein ke spelling aur https sahi ho
 cors_origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "localhost:3000",
-    "https://kn-kitchen.vercel.app",  # Aapka Vercel URL
-    "https://kn-kitchen-frontend.vercel.app", # Alternative Vercel domain agar hai
+    "https://kn-kitchen.vercel.app",  
+    "https://kn-kitchen-frontend.vercel.app", 
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # TESTING KE LIYE: Is se har domain allow ho jayega
+    allow_origins=cors_origins, # "*" ki jagah ab specific list use ho rahi hai
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
@@ -125,4 +126,4 @@ app.include_router(items.router, prefix="/items", tags=["Items"])
 app.include_router(media.router, prefix="/media", tags=["Media"])
 app.include_router(albums.router, prefix="/albums", tags=["Albums"])
 app.include_router(orders.router, prefix="/orders", tags=["Orders"])
-app.include_router(users.router, prefix="/users", tags=["Users"])   
+app.include_router(users.router, prefix="/users", tags=["Users"])
