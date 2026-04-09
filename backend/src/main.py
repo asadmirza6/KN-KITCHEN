@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, select
 from .config import settings
-from .database import engine, get_session
+from .database import engine, get_session, create_db_and_tables
 import os
 
 
@@ -26,6 +26,9 @@ async def startup_validation():
     """Validate required environment variables on startup."""
     import os
     from .utils.cloudinary_config import CLOUDINARY_CONFIGURED
+
+    # Create database tables
+    create_db_and_tables()
 
     print("\n" + "="*60)
     print("KN KITCHEN API - Startup Validation")
@@ -119,11 +122,12 @@ def root():
 
 
 # Import and mount routers
-from .api import auth, items, media, orders, users, albums
+from .api import auth, items, media, orders, quotations, users, albums
 
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(items.router, prefix="/items", tags=["Items"])
 app.include_router(media.router, prefix="/media", tags=["Media"])
 app.include_router(albums.router, prefix="/albums", tags=["Albums"])
 app.include_router(orders.router, prefix="/orders", tags=["Orders"])
+app.include_router(quotations.router, prefix="/quotations", tags=["Quotations"])
 app.include_router(users.router, prefix="/users", tags=["Users"])

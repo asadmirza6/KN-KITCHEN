@@ -19,6 +19,8 @@ engine = create_engine(
 
 def create_db_and_tables():
     """Create all database tables. Call this on app startup."""
+    # Import all models to register them with SQLModel.metadata
+    from .models import User, Order, Item, MediaAsset, Album, Quotation
     SQLModel.metadata.create_all(engine)
 
 
