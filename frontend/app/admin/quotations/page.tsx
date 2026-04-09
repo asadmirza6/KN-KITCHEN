@@ -206,9 +206,9 @@ export default function AdminQuotationsPage() {
         manual_items: formData.manualItems,
         total_amount: total,
         advance_payment: 0,
-        delivery_date: formData.deliveryDate || null,
-        valid_until: formData.validUntil || null,
-        notes: formData.notes || null,
+        delivery_date: formData.deliveryDate || undefined,
+        valid_until: formData.validUntil || undefined,
+        notes: formData.notes || undefined,
         discount: formData.discount
       }
 

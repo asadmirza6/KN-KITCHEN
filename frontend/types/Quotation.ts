@@ -21,6 +21,7 @@ export interface Quotation {
   total_amount: string
   advance_payment: string
   balance: string
+  discount: string
   delivery_date: string | null
   valid_until: string | null
   notes: string | null
