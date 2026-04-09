@@ -579,6 +579,24 @@ def download_invoice(
             detail="Order not found"
         )
 
+    # Extract all order data before session closes
+    order_id_val = order.id
+    order_created_at = order.created_at
+    order_created_by_name = order.created_by_name
+    order_customer_name = order.customer_name
+    order_customer_phone = order.customer_phone
+    order_customer_address = order.customer_address
+    order_customer_email = order.customer_email
+    order_delivery_date = order.delivery_date
+    order_notes = order.notes
+    order_items = order.items
+    order_manual_items = order.manual_items
+    order_total_amount = order.total_amount
+    order_advance_payment = order.advance_payment
+    order_balance = order.balance
+    order_discount = order.discount or 0
+    order_status = order.status
+
     # Create PDF in memory with watermark
     buffer = BytesIO()
     logo_path = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'logo.jpeg')
@@ -598,7 +616,7 @@ def download_invoice(
 
     # ===== HEADER SECTION =====
     # Invoice # in center at top
-    invoice_data = [["INVOICE #" + str(order.id)]]
+    invoice_data = [["INVOICE #" + str(order_id_val)]]
     invoice_table = RLTable(invoice_data, colWidths=[6.9*inch])
     invoice_table.setStyle(TableStyle([
         ('ALIGN', (0, 0), (0, 0), 'CENTER'),
@@ -610,7 +628,7 @@ def download_invoice(
     elements.append(invoice_table)
 
     # Date on right side
-    date_data = [[f"Date: {order.created_at.strftime('%B %d, %Y')}"]]
+    date_data = [[f"Date: {order_created_at.strftime('%B %d, %Y')}"]]
     date_table = RLTable(date_data, colWidths=[6.9*inch])
     date_table.setStyle(TableStyle([
         ('ALIGN', (0, 0), (0, 0), 'RIGHT'),
@@ -633,17 +651,17 @@ def download_invoice(
     elements.append(Spacer(1, 0.15*inch))
 
     # Build customer details as one continuous text block
-    customer_text = f"Created By: {order.created_by_name}\n\n"
-    customer_text += f"Name: {order.customer_name}\n"
-    customer_text += f"Phone: {order.customer_phone}\n"
-    customer_text += f"Address: {order.customer_address}\n"
-    customer_text += f"Email: {order.customer_email}\n"
+    customer_text = f"Created By: {order_created_by_name}\n\n"
+    customer_text += f"Name: {order_customer_name}\n"
+    customer_text += f"Phone: {order_customer_phone}\n"
+    customer_text += f"Address: {order_customer_address}\n"
+    customer_text += f"Email: {order_customer_email}\n"
 
-    if order.delivery_date:
-        customer_text += f"Delivery Date: {order.delivery_date}\n"
+    if order_delivery_date:
+        customer_text += f"Delivery Date: {order_delivery_date}\n"
 
-    if order.notes:
-        customer_text += f"Special Note: {order.notes}\n"
+    if order_notes:
+        customer_text += f"Special Note: {order_notes}\n"
 
     # Create single cell with border
     customer_data = [[customer_text]]
@@ -664,7 +682,7 @@ def download_invoice(
     # ===== ITEMS TABLE (Centered) =====
     items_data = [['Item Name', 'Quantity (kg)', 'Rate (Rs/kg)', 'Amount (Rs)']]
 
-    for item in order.items:
+    for item in order_items:
         items_data.append([
             item['item_name'],
             f"{item['quantity_kg']:.2f}",
@@ -673,8 +691,8 @@ def download_invoice(
         ])
 
     # Add manual items to the table
-    if order.manual_items:
-        for item in order.manual_items:
+    if order_manual_items:
+        for item in order_manual_items:
             items_data.append([
                 item['name'],
                 f"{item['quantity_kg']:.2f}",
@@ -718,18 +736,17 @@ def download_invoice(
 
     # ===== AMOUNT BOX (Right Aligned, at bottom) =====
     summary_data = [
-        ['Subtotal:', f"Rs {float(order.total_amount) + float(order.discount or 0):,.2f}"],
+        ['Subtotal:', f"Rs {float(order_total_amount) + float(order_discount):,.2f}"],
     ]
 
     # Add discount if present and greater than 0
-    discount_amount = float(order.discount or 0)
-    if discount_amount > 0:
-        summary_data.append(['Discount:', f"Rs {discount_amount:,.2f}"])
+    if order_discount > 0:
+        summary_data.append(['Discount:', f"Rs {order_discount:,.2f}"])
 
     summary_data.extend([
-        ['Advance Payment:', f"Rs {float(order.advance_payment):,.2f}"],
-        ['Balance Due:', f"Rs {float(order.balance):,.2f}"],
-        ['Status:', order.status.upper()],
+        ['Advance Payment:', f"Rs {float(order_advance_payment):,.2f}"],
+        ['Balance Due:', f"Rs {float(order_balance):,.2f}"],
+        ['Status:', order_status.upper()],
     ])
 
     summary_table = Table(summary_data, colWidths=[3.5*inch, 2.4*inch])
@@ -765,6 +782,6 @@ def download_invoice(
         buffer,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f"attachment; filename=invoice_{order.id}_{order.customer_name.replace(' ', '_')}.pdf"
+            "Content-Disposition": f"attachment; filename=invoice_{order_id}_{order_customer_name.replace(' ', '_')}.pdf"
         }
     )
