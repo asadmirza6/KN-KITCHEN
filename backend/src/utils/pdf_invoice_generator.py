@@ -339,12 +339,18 @@ class A4InvoiceGenerator:
         # Add 5-6 line gap
         elements.append(Spacer(1, 0.4*inch))
 
-        # Build summary data
+        # Build summary data with discount if present
         summary_data = [
             ['Subtotal:', f"Rs {float(invoice_data['subtotal']):,.2f}"],
-            ['Advance Payment:', f"Rs {float(invoice_data['advance_payment']):,.2f}"],
-            ['Balance Due:', f"Rs {float(invoice_data['balance_due']):,.2f}"],
         ]
+
+        # Add discount if present
+        if invoice_data.get('discount') and float(invoice_data['discount']) > 0:
+            summary_data.append(['Discount:', f"Rs {float(invoice_data['discount']):,.2f}"])
+
+        # Add advance payment and balance
+        summary_data.append(['Advance Payment:', f"Rs {float(invoice_data['advance_payment']):,.2f}"])
+        summary_data.append(['Balance Due:', f"Rs {float(invoice_data['balance_due']):,.2f}"])
 
         # Create summary table (right-aligned)
         summary_table = Table(summary_data, colWidths=[2.5*inch, 2.0*inch])
@@ -364,8 +370,8 @@ class A4InvoiceGenerator:
             ('TOPPADDING', (0, 0), (-1, -1), 3),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
 
-            # Line above Balance Due
-            ('LINEABOVE', (0, 2), (-1, 2), 1.5, colors.black),
+            # Line above Balance Due (last row)
+            ('LINEABOVE', (0, len(summary_data)-1), (-1, len(summary_data)-1), 1.5, colors.black),
 
             # No borders
             ('GRID', (0, 0), (-1, -1), 0, colors.white),

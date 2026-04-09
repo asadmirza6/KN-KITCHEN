@@ -363,6 +363,7 @@ def approve_quotation(
         total_amount=quotation.total_amount,
         advance_payment=quotation.advance_payment,
         balance=quotation.balance,
+        discount=quotation.discount,
         delivery_date=quotation.delivery_date,
         notes=quotation.notes,
         status="pending"

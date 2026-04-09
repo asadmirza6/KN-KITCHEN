@@ -718,11 +718,18 @@ def download_invoice(
 
     # ===== AMOUNT BOX (Right Aligned, at bottom) =====
     summary_data = [
-        ['Subtotal:', f"Rs {float(order.total_amount):,.2f}"],
+        ['Subtotal:', f"Rs {float(order.total_amount) + float(order.discount):,.2f}"],
+    ]
+
+    # Add discount if present
+    if order.discount and float(order.discount) > 0:
+        summary_data.append(['Discount:', f"Rs {float(order.discount):,.2f}"])
+
+    summary_data.extend([
         ['Advance Payment:', f"Rs {float(order.advance_payment):,.2f}"],
         ['Balance Due:', f"Rs {float(order.balance):,.2f}"],
         ['Status:', order.status.upper()],
-    ]
+    ])
 
     summary_table = Table(summary_data, colWidths=[3.5*inch, 2.4*inch])
     summary_table.setStyle(TableStyle([

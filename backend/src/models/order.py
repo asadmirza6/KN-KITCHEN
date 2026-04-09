@@ -68,6 +68,13 @@ class Order(SQLModel, table=True):
         nullable=False,
         description="Remaining balance (total - advance)"
     )
+    discount: Decimal = Field(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        nullable=False,
+        description="Discount applied to order"
+    )
 
     # Additional fields
     delivery_date: Optional[str] = Field(max_length=50, nullable=True, description="Delivery date (optional)")
