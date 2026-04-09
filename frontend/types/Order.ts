@@ -5,26 +5,54 @@
 
 export interface OrderItem {
   item_id: number
-  quantity: number
+  item_name: string
+  quantity_kg: number
+  price_per_kg: number
+  subtotal: number
+}
+
+export interface ManualItem {
+  name: string
+  quantity_kg: number
+  price_per_kg: number
+  subtotal: number
 }
 
 export interface Order {
   id: number
   user_id: number
-  items: OrderItem[] // JSON array of {item_id, quantity}
-  total_amount: string // Decimal as string (e.g., "1500.00")
-  advance_payment: string // Decimal as string
-  balance: string // Decimal as string
-  created_at: string // ISO 8601 datetime string
+  created_by_name: string
+  customer_name: string
+  customer_email: string
+  customer_phone: string
+  customer_address: string
+  items: OrderItem[]
+  manual_items: ManualItem[]
+  total_amount: string
+  advance_payment: string
+  balance: string
+  discount: string
+  delivery_date: string | null
+  notes: string | null
+  status: 'pending' | 'partial' | 'paid' | 'cancelled'
+  created_at: string
 }
 
 /**
  * DTO for creating a new order
  */
 export interface CreateOrderRequest {
-  customer_name?: string // Optional customer name (not in DB model but useful for UI)
+  customer_name: string
+  customer_email: string
+  customer_phone: string
+  customer_address: string
   items: OrderItem[]
-  advance_payment: string // Decimal as string
+  manual_items: ManualItem[]
+  total_amount: number
+  advance_payment: number
+  discount: number
+  delivery_date?: string | null
+  notes?: string | null
 }
 
 /**
