@@ -62,7 +62,8 @@ export default function AdminDashboard() {
   const formatUptime = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600)
     const minutes = Math.floor((seconds % 3600) / 60)
-    return `${hours}h ${minutes}m`
+    const secs = seconds % 60
+    return `${hours}h ${minutes}m ${secs}s`
   }
 
   const systemStatus = {
@@ -70,13 +71,6 @@ export default function AdminDashboard() {
     today_orders: stats?.today_orders || 0,
     server_uptime: formatUptime(Math.floor((new Date().getTime() - sessionStartTime.getTime()) / 1000)),
     active_sessions: 1
-  }
-
-  const formatUptime = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-    const secs = seconds % 60
-    return `${hours}h ${minutes}m ${secs}s`
   }
 
   if (!user) {
