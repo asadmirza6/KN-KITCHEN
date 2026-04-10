@@ -7,9 +7,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import useSWR from 'swr'
 import { isAuthenticated } from '@/services/authService'
 import axios from '@/lib/axios'
 import { formatCurrency } from '@/lib/currency'
+import { swrFetcher, swrConfig } from '@/lib/swr'
 import {
   createQuotation,
   getQuotations,
@@ -42,14 +44,23 @@ interface QuotationFormData {
 
 export default function AdminQuotationsPage() {
   const router = useRouter()
-  const [quotations, setQuotations] = useState<Quotation[]>([])
-  const [items, setItems] = useState<Item[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [showItemModal, setShowItemModal] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
+
+  // SWR hooks for data fetching
+  const { data: quotations = [], error: quotationsError, isLoading: quotationsLoading, mutate: mutateQuotations } = useSWR(
+    isAuthenticated() ? '/quotations/' : null,
+    swrFetcher,
+    swrConfig
+  )
+
+  const { data: items = [], error: itemsError, isLoading: itemsLoading } = useSWR(
+    isAuthenticated() ? '/items/' : null,
+    swrFetcher,
+    swrConfig
+  )
 
   const [formData, setFormData] = useState<QuotationFormData>({
     customerName: '',
@@ -67,27 +78,8 @@ export default function AdminQuotationsPage() {
   useEffect(() => {
     if (!isAuthenticated()) {
       router.push('/login')
-      return
     }
-    loadData()
   }, [router])
-
-  const loadData = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const [quotationsData, itemsData] = await Promise.all([
-        getQuotations(),
-        axios.get('/items/').then(res => res.data)
-      ])
-      setQuotations(quotationsData)
-      setItems(itemsData)
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to load data')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const calculateTotal = () => {
     const menuTotal = formData.selectedItems.reduce((total, item) => {
@@ -174,17 +166,14 @@ export default function AdminQuotationsPage() {
     e.preventDefault()
 
     if (!formData.customerName || !formData.customerEmail || !formData.customerPhone || !formData.customerAddress) {
-      setError('Please fill in all customer details')
       return
     }
 
     if (formData.selectedItems.length === 0 && formData.manualItems.length === 0) {
-      setError('Please add at least one item')
       return
     }
 
     setSubmitting(true)
-    setError(null)
 
     try {
       const total = calculateTotal()
@@ -234,9 +223,9 @@ export default function AdminQuotationsPage() {
       })
       setEditingId(null)
       setShowForm(false)
-      await loadData()
+      // Revalidate quotations cache
+      mutateQuotations()
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to save quotation')
     } finally {
       setSubmitting(false)
     }
@@ -244,7 +233,6 @@ export default function AdminQuotationsPage() {
 
   const handleDeleteQuotation = async (quotation: Quotation) => {
     if (quotation.status !== 'pending') {
-      setError('Only pending quotations can be deleted')
       return
     }
 
@@ -254,9 +242,9 @@ export default function AdminQuotationsPage() {
 
     try {
       await deleteQuotation(quotation.id)
-      await loadData()
+      // Revalidate quotations cache
+      mutateQuotations()
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to delete quotation')
     }
   }
 
@@ -267,9 +255,10 @@ export default function AdminQuotationsPage() {
 
     try {
       await approveQuotation(quotation.id)
-      await loadData()
+      // Revalidate quotations cache
+      mutateQuotations()
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to approve quotation')
+
     }
   }
 
@@ -339,9 +328,9 @@ export default function AdminQuotationsPage() {
         </div>
 
         {/* Error Message */}
-        {error && (
+        {(quotationsError || itemsError) && (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {error}
+            {quotationsError?.message || itemsError?.message || 'Failed to load data'}
           </div>
         )}
 
@@ -634,7 +623,7 @@ export default function AdminQuotationsPage() {
             </p>
           </div>
 
-          {loading ? (
+          {quotationsLoading ? (
             <div className="p-12 text-center">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
               <p className="mt-4 text-gray-600">Loading quotations...</p>

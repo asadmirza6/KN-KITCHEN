@@ -1,9 +1,27 @@
+'use client'
+
+import { useEffect } from 'react'
+import axios from '@/lib/axios'
 import BannerSlider from '@/components/BannerSlider'
 import Gallery from '@/components/Gallery'
 import MenuItems from '@/components/MenuItems'
 
-
 export default function Home() {
+  // Backend pre-warming: wake up Render free-tier on app load
+  useEffect(() => {
+    const warmupBackend = async () => {
+      try {
+        // Send a simple GET request to backend root to trigger spin-up
+        await axios.get('/', { timeout: 5000 })
+      } catch (error) {
+        // Silently fail - this is just a warmup request
+        console.debug('Backend warmup request completed')
+      }
+    }
+
+    warmupBackend()
+  }, [])
+
   return (
     <main className="min-h-screen bg-transparent">
       {/* Hero Section - Banner Slider */}

@@ -7,9 +7,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import useSWR from 'swr'
 import { isAuthenticated, getCurrentUser } from '@/services/authService'
 import axios from '@/lib/axios'
 import { formatCurrency } from '@/lib/currency'
+import { swrFetcher, swrConfig } from '@/lib/swr'
 import Toast from '@/components/Toast'
 
 interface Item {
@@ -24,13 +26,17 @@ interface Item {
 
 export default function AdminItemsPage() {
   const router = useRouter()
-  const [items, setItems] = useState<Item[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editingItem, setEditingItem] = useState<Item | null>(null)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [toast, setToast] = useState({ message: '', type: 'success' as 'success' | 'error', isVisible: false })
+
+  // SWR hook for items data
+  const { data: items = [], error: itemsError, isLoading: itemsLoading, mutate: mutateItems } = useSWR(
+    isAuthenticated() ? '/items/' : null,
+    swrFetcher,
+    swrConfig
+  )
 
   // Form state
   const [formData, setFormData] = useState({
@@ -52,21 +58,7 @@ export default function AdminItemsPage() {
       return
     }
     setCurrentUser(getCurrentUser())
-    fetchItems()
   }, [router])
-
-  const fetchItems = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const response = await axios.get('/items/')
-      setItems(response.data)
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to fetch items')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -84,12 +76,10 @@ export default function AdminItemsPage() {
     e.preventDefault()
 
     if (!formData.name || !formData.price_per_kg) {
-      setError('Please fill in all required fields')
       return
     }
 
     setSubmitting(true)
-    setError(null)
 
     try {
       const formDataToSend = new FormData()
@@ -118,13 +108,12 @@ export default function AdminItemsPage() {
       setShowForm(false)
       setEditingItem(null)
 
-      // Refresh list
-      await fetchItems()
+      // Revalidate items cache
+      mutateItems()
 
       // Show success message
       showToast(editingItem ? 'Item updated successfully!' : 'Item created successfully!', 'success');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to save item')
       showToast(err.response?.data?.detail || 'Failed to save item', 'error');
     } finally {
       setSubmitting(false)
@@ -149,10 +138,10 @@ export default function AdminItemsPage() {
 
     try {
       await axios.delete(`/items/${item.id}`)
-      await fetchItems()
+      // Revalidate items cache
+      mutateItems()
       showToast('Item deleted successfully!', 'success');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to delete item')
       showToast(err.response?.data?.detail || 'Failed to delete item', 'error');
     }
   }
@@ -199,9 +188,9 @@ export default function AdminItemsPage() {
         </div>
 
         {/* Error Message */}
-        {error && (
+        {itemsError && (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {error}
+            {itemsError?.message || 'Failed to load items'}
           </div>
         )}
 
@@ -305,7 +294,7 @@ export default function AdminItemsPage() {
             <h2 className="text-xl font-bold text-gray-900">Menu Items</h2>
           </div>
 
-          {loading ? (
+          {itemsLoading ? (
             <div className="p-12 text-center">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
               <p className="mt-4 text-gray-600">Loading items...</p>
