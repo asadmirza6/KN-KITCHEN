@@ -97,7 +97,8 @@ export default function AdminInventoryPage() {
       setShowForm(false)
       mutateInventory()
     } catch (err: any) {
-      setFormError(err.response?.data?.detail || err.message || 'Failed to create inventory item')
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to create inventory item'
+      setFormError(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage))
     } finally {
       setSubmitting(false)
     }

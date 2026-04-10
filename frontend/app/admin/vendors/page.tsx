@@ -99,7 +99,8 @@ export default function AdminVendorsPage() {
       setShowForm(false)
       mutateVendors()
     } catch (err: any) {
-      setFormError(err.response?.data?.detail || err.message || 'Failed to create vendor')
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to create vendor'
+      setFormError(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage))
     } finally {
       setSubmitting(false)
     }

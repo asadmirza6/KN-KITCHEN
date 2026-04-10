@@ -111,7 +111,8 @@ export default function AdminStaffPage() {
       setShowStaffForm(false)
       mutateStaff()
     } catch (err: any) {
-      setFormError(err.response?.data?.detail || err.message || 'Failed to create staff member')
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to create staff member'
+      setFormError(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage))
     } finally {
       setSubmitting(false)
     }
@@ -146,7 +147,8 @@ export default function AdminStaffPage() {
       setSelectedStaffId(null)
       mutateStaff()
     } catch (err: any) {
-      setFormError(err.response?.data?.detail || err.message || 'Failed to record transaction')
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to record transaction'
+      setFormError(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage))
     } finally {
       setSubmitting(false)
     }
