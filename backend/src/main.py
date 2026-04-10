@@ -27,12 +27,18 @@ async def startup_validation():
     import os
     from .utils.cloudinary_config import CLOUDINARY_CONFIGURED
 
-    # Create database tables
-    create_db_and_tables()
-
     print("\n" + "="*60)
     print("KN KITCHEN API - Startup Validation")
     print("="*60)
+
+    # Create database tables and sync schema
+    try:
+        create_db_and_tables()
+        print("[OK] Database tables created and schema synchronized")
+    except Exception as e:
+        print(f"[ERROR] Database initialization failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
 
     # Check database
     db_url = os.getenv("DATABASE_URL")
