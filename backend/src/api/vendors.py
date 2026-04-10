@@ -3,7 +3,7 @@ Vendor API endpoints for supplier management.
 Handles vendor CRUD operations and vendor ledger calculations.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Form
 from sqlmodel import Session, select, func
 from typing import List, Optional
 from decimal import Decimal
@@ -159,9 +159,9 @@ def get_vendor(
 
 @router.post("/", dependencies=[Depends(verify_jwt), Depends(require_admin)])
 def create_vendor(
-    name: str,
-    contact_info: str,
-    category: str,
+    name: str = Form(...),
+    contact_info: str = Form(...),
+    category: str = Form(...),
     session: Session = Depends(get_session)
 ):
     """

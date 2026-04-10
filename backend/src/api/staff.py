@@ -3,7 +3,7 @@ Staff API endpoints for employee management.
 Handles staff CRUD operations and payroll calculations.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Form
 from sqlmodel import Session, select, func
 from typing import List, Optional
 from decimal import Decimal
@@ -143,9 +143,9 @@ def get_staff_member(
 
 @router.post("/", dependencies=[Depends(verify_jwt), Depends(require_admin)])
 def create_staff(
-    name: str,
-    role: str,
-    monthly_salary: Decimal,
+    name: str = Form(...),
+    role: str = Form(...),
+    monthly_salary: str = Form(...),
     session: Session = Depends(get_session)
 ):
     """
@@ -164,7 +164,16 @@ def create_staff(
                 detail="Staff name is required"
             )
 
-        if monthly_salary <= 0:
+        # Convert monthly_salary string to Decimal
+        try:
+            salary_decimal = Decimal(monthly_salary)
+        except:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Monthly salary must be a valid number"
+            )
+
+        if salary_decimal <= 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Monthly salary must be greater than 0"
@@ -184,7 +193,7 @@ def create_staff(
         new_staff = Staff(
             name=name.strip(),
             role=role.strip(),
-            monthly_salary=monthly_salary
+            monthly_salary=salary_decimal
         )
 
         session.add(new_staff)

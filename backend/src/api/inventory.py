@@ -3,7 +3,7 @@ Inventory API endpoints for stock management.
 Handles inventory CRUD operations with weighted average costing logic.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Form
 from sqlmodel import Session, select
 from typing import List, Optional
 from decimal import Decimal
@@ -90,10 +90,10 @@ def get_inventory_item(
 
 @router.post("/", dependencies=[Depends(verify_jwt), Depends(require_admin)])
 def create_inventory_item(
-    item_name: str,
-    unit: str,
-    current_stock: float = 0.0,
-    average_price: Decimal = Decimal("0.00"),
+    item_name: str = Form(...),
+    unit: str = Form(...),
+    current_stock: str = Form("0.0"),
+    average_price: str = Form("0.00"),
     session: Session = Depends(get_session)
 ):
     """
@@ -113,6 +113,24 @@ def create_inventory_item(
                 detail="Item name is required"
             )
 
+        # Convert current_stock from string to float
+        try:
+            stock_float = float(current_stock)
+        except:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Current stock must be a valid number"
+            )
+
+        # Convert average_price from string to Decimal
+        try:
+            price_decimal = Decimal(average_price)
+        except:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Average price must be a valid number"
+            )
+
         # Check if item already exists
         existing = session.exec(
             select(Inventory).where(Inventory.item_name == item_name.strip())
@@ -127,8 +145,8 @@ def create_inventory_item(
         new_item = Inventory(
             item_name=item_name.strip(),
             unit=unit.strip(),
-            current_stock=current_stock,
-            average_price=average_price
+            current_stock=stock_float,
+            average_price=price_decimal
         )
 
         session.add(new_item)

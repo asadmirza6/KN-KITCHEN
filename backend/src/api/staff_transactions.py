@@ -3,7 +3,7 @@ Staff Transaction API endpoints for payroll management.
 Handles salary advances and salary payments with validation.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Form
 from sqlmodel import Session, select, func
 from typing import List
 from decimal import Decimal
@@ -95,9 +95,9 @@ def get_staff_transaction(
 
 @router.post("/", dependencies=[Depends(verify_jwt), Depends(require_admin)])
 def create_staff_transaction(
-    staff_id: int,
-    amount: Decimal,
-    transaction_type: str,
+    staff_id: str = Form(...),
+    amount: str = Form(...),
+    transaction_type: str = Form(...),
     session: Session = Depends(get_session)
 ):
     """
@@ -116,16 +116,34 @@ def create_staff_transaction(
         transaction_type: Type of transaction (Advance or Salary)
     """
     try:
+        # Convert staff_id from string to int
+        try:
+            staff_id_int = int(staff_id)
+        except:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Staff ID must be a valid number"
+            )
+
+        # Convert amount from string to Decimal
+        try:
+            amount_decimal = Decimal(amount)
+        except:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Amount must be a valid number"
+            )
+
         # Validate staff exists
-        staff = session.get(Staff, staff_id)
+        staff = session.get(Staff, staff_id_int)
         if not staff:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Staff member {staff_id} not found"
+                detail=f"Staff member {staff_id_int} not found"
             )
 
         # Validate amount
-        if amount <= 0:
+        if amount_decimal <= 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Transaction amount must be greater than 0"
@@ -144,13 +162,13 @@ def create_staff_transaction(
             current_advances = session.exec(
                 select(func.sum(StaffTransaction.amount))
                 .where(
-                    (StaffTransaction.staff_id == staff_id) &
+                    (StaffTransaction.staff_id == staff_id_int) &
                     (StaffTransaction.transaction_type == TransactionType.ADVANCE.value)
                 )
             ).first() or Decimal("0.00")
 
             # Check if new advance would exceed monthly salary
-            total_advances_after = current_advances + amount
+            total_advances_after = current_advances + amount_decimal
 
             if total_advances_after > staff.monthly_salary:
                 remaining_available = staff.monthly_salary - current_advances
@@ -161,8 +179,8 @@ def create_staff_transaction(
 
         # Create transaction
         new_transaction = StaffTransaction(
-            staff_id=staff_id,
-            amount=amount,
+            staff_id=staff_id_int,
+            amount=amount_decimal,
             transaction_type=transaction_type,
             date=datetime.utcnow()
         )
@@ -175,7 +193,7 @@ def create_staff_transaction(
         total_advances = session.exec(
             select(func.sum(StaffTransaction.amount))
             .where(
-                (StaffTransaction.staff_id == staff_id) &
+                (StaffTransaction.staff_id == staff_id_int) &
                 (StaffTransaction.transaction_type == TransactionType.ADVANCE.value)
             )
         ).first() or Decimal("0.00")
