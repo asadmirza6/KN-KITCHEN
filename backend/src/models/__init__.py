@@ -5,6 +5,17 @@ from .quotation import Quotation
 from .package import Package
 from .media_asset import MediaAsset
 from .album import Album
+from .erp import (
+    Inventory,
+    Vendor,
+    PurchaseRecord,
+    VendorPayment,
+    Staff,
+    StaffTransaction,
+    Recipe,
+    PaymentType,
+    TransactionType,
+)
 
 __all__ = [
     "User",
@@ -16,4 +27,14 @@ __all__ = [
     "Package",
     "MediaAsset",
     "Album",
+    # ERP Models
+    "Inventory",
+    "Vendor",
+    "PurchaseRecord",
+    "VendorPayment",
+    "Staff",
+    "StaffTransaction",
+    "Recipe",
+    "PaymentType",
+    "TransactionType",
 ]

@@ -25,7 +25,10 @@ def create_db_and_tables():
     Call this on app startup.
     """
     # Import all models to register them with SQLModel.metadata
-    from .models import User, Order, Item, MediaAsset, Album, Quotation
+    from .models import (
+        User, Order, Item, MediaAsset, Album, Quotation, Package,
+        Inventory, Vendor, PurchaseRecord, VendorPayment, Staff, StaffTransaction, Recipe
+    )
 
     try:
         # Create tables from SQLModel definitions

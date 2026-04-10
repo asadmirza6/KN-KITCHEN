@@ -15,6 +15,7 @@ export default function Navbar() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [mounted, setMounted] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -34,10 +35,14 @@ export default function Navbar() {
     router.push('/login')
   }
 
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false)
+  }
+
   return (
     <nav className="sticky top-0 z-50 bg-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+        <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
             <a href="/" className="flex items-center gap-2">
@@ -52,7 +57,7 @@ export default function Navbar() {
             </a>
           </div>
 
-          {/* Navigation Links (Center) */}
+          {/* Navigation Links (Center) - Desktop Only */}
           <div className="hidden md:flex md:items-center md:space-x-8">
             <a
               href="/"
@@ -92,8 +97,8 @@ export default function Navbar() {
             </a>
           </div>
 
-          {/* Login/Logout Button (Right) */}
-          <div className="flex items-center space-x-4">
+          {/* Right Section - Desktop */}
+          <div className="hidden md:flex md:items-center md:space-x-4">
             {mounted && user ? (
               <>
                 {user.role === 'ADMIN' && (
@@ -125,57 +130,117 @@ export default function Navbar() {
               <div className="w-20 h-10 bg-gray-200 rounded-md animate-pulse" />
             )}
           </div>
+
+          {/* Hamburger Menu - Mobile Only */}
+          <div className="md:hidden flex items-center space-x-2">
+            {mounted && user && user.role === 'ADMIN' && (
+              <a
+                href="/admin"
+                className="text-gray-700 hover:text-indigo-600 px-2 py-1 text-xs font-medium transition-colors"
+              >
+                Admin
+              </a>
+            )}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-indigo-600 hover:bg-gray-100 focus:outline-none transition-colors"
+              aria-expanded="false"
+            >
+              <svg
+                className="block h-6 w-6"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Mobile Navigation Menu */}
-      {mounted && (
-        <div className="md:hidden border-t border-gray-200">
+      {/* Mobile Navigation Menu - Dropdown */}
+      {mounted && mobileMenuOpen && (
+        <div className="md:hidden bg-white border-t border-gray-200">
           <div className="px-2 pt-2 pb-3 space-y-1">
             <a
               href="/"
-              className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium"
+              onClick={closeMobileMenu}
+              className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium transition-colors"
             >
               HOME
             </a>
             <a
               href="#packages"
-              className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium"
+              onClick={closeMobileMenu}
+              className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium transition-colors"
             >
               PACKAGES
             </a>
             <a
               href="#about"
-              className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium"
+              onClick={closeMobileMenu}
+              className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium transition-colors"
             >
               ABOUT
             </a>
             <a
               href="#gallery"
-              className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium"
+              onClick={closeMobileMenu}
+              className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium transition-colors"
             >
               GALLERY
             </a>
             <a
               href="#contact"
-              className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium"
+              onClick={closeMobileMenu}
+              className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium transition-colors"
             >
               CONTACT
             </a>
             <a
               href="#feedback"
-              className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium"
+              onClick={closeMobileMenu}
+              className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium transition-colors"
             >
               FEEDBACK
             </a>
-            {user && user.role === 'ADMIN' && (
-              <a
-                href="/admin"
-                className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium"
-              >
-                Admin Panel
-              </a>
-            )}
+
+            {/* Mobile Auth Section */}
+            <div className="border-t border-gray-200 pt-2 mt-2">
+              {user ? (
+                <>
+                  <div className="px-3 py-2 text-sm text-gray-700 font-medium">
+                    Welcome, {user.name}
+                  </div>
+                  <button
+                    onClick={() => {
+                      handleLogout()
+                      closeMobileMenu()
+                    }}
+                    className="w-full text-left block text-red-600 hover:text-red-700 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium transition-colors"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => {
+                    handleLogin()
+                    closeMobileMenu()
+                  }}
+                  className="w-full text-left block text-indigo-600 hover:text-indigo-700 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium transition-colors"
+                >
+                  Login
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
