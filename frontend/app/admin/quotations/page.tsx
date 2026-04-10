@@ -48,6 +48,7 @@ export default function AdminQuotationsPage() {
   const [submitting, setSubmitting] = useState(false)
   const [showItemModal, setShowItemModal] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
 
   // SWR hooks for data fetching
   const { data: quotations = [], error: quotationsError, isLoading: quotationsLoading, mutate: mutateQuotations } = useSWR(
@@ -139,10 +140,11 @@ export default function AdminQuotationsPage() {
 
   const handleEditQuotation = (quotation: Quotation) => {
     if (quotation.status !== 'pending') {
-      setError('Only pending quotations can be edited')
+      setFormError('Only pending quotations can be edited')
       return
     }
 
+    setFormError(null)
     setEditingId(quotation.id)
     setFormData({
       customerName: quotation.customer_name,
@@ -266,7 +268,7 @@ export default function AdminQuotationsPage() {
     try {
       await downloadQuotationEstimate(quotation.id, quotation.customer_name)
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to download quotation')
+      setFormError(err.response?.data?.detail || 'Failed to download quotation')
     }
   }
 
@@ -285,6 +287,7 @@ export default function AdminQuotationsPage() {
       discount: 0
     })
     setEditingId(null)
+    setFormError(null)
     setError(null)
   }
 
@@ -327,10 +330,15 @@ export default function AdminQuotationsPage() {
           </button>
         </div>
 
-        {/* Error Message */}
-        {(quotationsError || itemsError) && (
+        {/* Error Message with Cold Start Handling */}
+        {(quotationsError || itemsError || formError) && (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {quotationsError?.message || itemsError?.message || 'Failed to load data'}
+            <p className="font-semibold">⚠️ Connection Issue</p>
+            <p className="text-sm mt-1">
+              {quotationsError?.response?.status === 503 || itemsError?.response?.status === 503
+                ? 'Backend is starting up. Please wait a moment and refresh the page.'
+                : formError || quotationsError?.message || itemsError?.message || 'Failed to load data. Please try again.'}
+            </p>
           </div>
         )}
 

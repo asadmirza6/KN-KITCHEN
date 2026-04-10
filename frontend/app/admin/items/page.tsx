@@ -187,10 +187,15 @@ export default function AdminItemsPage() {
           </button>
         </div>
 
-        {/* Error Message */}
+        {/* Error Message with Cold Start Handling */}
         {itemsError && (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {itemsError?.message || 'Failed to load items'}
+            <p className="font-semibold">⚠️ Connection Issue</p>
+            <p className="text-sm mt-1">
+              {itemsError?.response?.status === 503
+                ? 'Backend is starting up. Please wait a moment and refresh the page.'
+                : itemsError?.message || 'Failed to load items. Please try again.'}
+            </p>
           </div>
         )}
 

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import Navbar from '@/components/Navbar'
+import { SWRProvider } from '@/app/providers'
 
 export const metadata: Metadata = {
   title: 'KN KITCHEN - Catering Management',
@@ -18,9 +19,12 @@ export default function RootLayout({
         {/* GLOBAL WATERMARK - Injected at root level */}
         <div id="global-watermark"></div>
 
-        <Navbar />
-        {children}
+        <SWRProvider>
+          <Navbar />
+          {children}
+        </SWRProvider>
       </body>
     </html>
   )
 }
+

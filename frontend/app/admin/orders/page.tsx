@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import useSWR from 'swr'
 import { isAuthenticated, getCurrentUser } from '@/services/authService'
-import { fetchItems } from '@/services/itemsService'
 import type { Item } from '@/types/Item'
 import type { User } from '@/types/User'
 import axios from '@/lib/axios'
@@ -54,12 +54,9 @@ interface OrderFormData {
 export default function AdminOrdersPage() {
   const router = useRouter()
   const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [items, setItems] = useState<Item[]>([])
-  const [orders, setOrders] = useState<Order[]>([])
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
-  const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string>('')
+  const [formError, setFormError] = useState<string>('')
   const [success, setSuccess] = useState<string>('')
 
   const [showCreateForm, setShowCreateForm] = useState(false)
@@ -69,6 +66,19 @@ export default function AdminOrdersPage() {
 
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'partial' | 'paid' | 'cancelled'>('all')
+
+  // SWR hooks for data fetching
+  const { data: items = [], error: itemsError, isLoading: itemsLoading, mutate: mutateItems } = useSWR(
+    isAuthenticated() ? '/items/' : null,
+    undefined,
+    { revalidateOnFocus: false }
+  )
+
+  const { data: orders = [], error: ordersError, isLoading: ordersLoading, mutate: mutateOrders } = useSWR(
+    isAuthenticated() && getCurrentUser()?.role === 'ADMIN' ? '/orders/' : null,
+    undefined,
+    { revalidateOnFocus: false }
+  )
 
   const [formData, setFormData] = useState<OrderFormData>({
     customerName: '',
@@ -82,27 +92,6 @@ export default function AdminOrdersPage() {
     notes: ''
   })
 
-  // FIXED: loadData logic with optional parameter
-  const loadData = async (userArg?: User | null) => {
-    try {
-      const itemsData = await fetchItems()
-      setItems(itemsData)
-
-      // Use provided user or fall back to state or fresh fetch
-      const user = userArg || currentUser || getCurrentUser();
-      
-      if (user?.role === 'ADMIN') {
-        const ordersData = await axios.get<Order[]>('/orders/')
-        setOrders(ordersData.data)
-      }
-    } catch (err: any) {
-      console.error('Failed to load data:', err)
-      setError('Failed to load data')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
     if (!isAuthenticated()) {
       router.push('/login')
@@ -110,7 +99,6 @@ export default function AdminOrdersPage() {
     }
     const user = getCurrentUser()
     setCurrentUser(user)
-    loadData(user)
   }, [router])
 
   useEffect(() => {
@@ -206,7 +194,7 @@ export default function AdminOrdersPage() {
 
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(''); setSuccess(''); setSubmitting(true)
+    setFormError(''); setSuccess(''); setSubmitting(true)
     try {
       if (formData.selectedItems.length === 0 && formData.manualItems.length === 0) throw new Error('Select at least one item (menu or manual)')
       if (!formData.customerName || !formData.customerEmail || !formData.customerPhone || !formData.customerAddress) throw new Error('Fill all customer details')
@@ -243,9 +231,10 @@ export default function AdminOrdersPage() {
       setSuccess('Order created!')
       setFormData({ customerName: '', customerEmail: '', customerPhone: '', customerAddress: '', selectedItems: [], manualItems: [], advancePayment: '', deliveryDate: '', notes: '' })
       setShowCreateForm(false)
-      await loadData()
+      // Revalidate orders cache
+      mutateOrders()
     } catch (err: any) {
-      setError(err.message || 'Failed to create order')
+      setFormError(err.message || 'Failed to create order')
     } finally {
       setSubmitting(false)
     }
@@ -254,7 +243,7 @@ export default function AdminOrdersPage() {
   const handleUpdateOrder = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedOrder) return
-    setError(''); setSuccess(''); setSubmitting(true)
+    setFormError(''); setSuccess(''); setSubmitting(true)
     try {
       const totalAmount = calculateTotal()
       const advanceAmount = parseFloat(formData.advancePayment) || 0
@@ -286,9 +275,10 @@ export default function AdminOrdersPage() {
       setSuccess('Order updated!')
       setShowEditModal(false)
       setSelectedOrder(null)
-      await loadData()
+      // Revalidate orders cache
+      mutateOrders()
     } catch (err: any) {
-      setError(err.message || 'Failed to update order')
+      setFormError(err.message || 'Failed to update order')
     } finally {
       setSubmitting(false)
     }
@@ -299,9 +289,10 @@ export default function AdminOrdersPage() {
     try {
       await axios.delete(`/orders/${id}`)
       setSuccess('Order cancelled')
-      await loadData()
+      // Revalidate orders cache
+      mutateOrders()
     } catch (err: any) {
-      setError('Failed to cancel')
+      setFormError('Failed to cancel')
     }
   }
 
@@ -312,7 +303,7 @@ export default function AdminOrdersPage() {
       const link = document.createElement('a')
       link.href = url; link.setAttribute('download', `invoice_${id}.pdf`)
       document.body.appendChild(link); link.click(); link.remove()
-    } catch (err) { setError('Invoice failed') }
+    } catch (err) { setFormError('Invoice failed') }
   }
 
   const getStatusBadge = (s: string) => {
@@ -329,7 +320,7 @@ export default function AdminOrdersPage() {
     )
   }
 
-  if (loading) return <div className="p-10 text-center text-black font-bold">Loading...</div>
+  if (ordersLoading || itemsLoading) return <div className="p-10 text-center text-black font-bold">Loading...</div>
 
   return (
     <div className="min-h-screen bg-transparent p-4 md:p-8">
@@ -342,7 +333,11 @@ export default function AdminOrdersPage() {
         </div>
         <h1 className="text-3xl font-bold mb-6 text-black">Orders Management</h1>
 
-        {error && <div className="bg-red-100 text-red-900 p-4 rounded mb-4 font-bold">{error}</div>}
+        {(ordersError || itemsError || formError) && (
+          <div className="bg-red-100 text-red-900 p-4 rounded mb-4 font-bold">
+            {formError || ordersError?.message || itemsError?.message || 'Failed to load data'}
+          </div>
+        )}
         {success && <div className="bg-green-100 text-green-900 p-4 rounded mb-4 font-bold">{success}</div>}
 
       {/* Create Order Form */}

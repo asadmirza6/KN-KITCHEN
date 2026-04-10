@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import useSWR from 'swr'
 import { isAuthenticated, getCurrentUser } from '@/services/authService'
 import type { User } from '@/types/User'
 import axios from '@/lib/axios'
@@ -38,11 +39,14 @@ interface SystemStatus {
 export default function AdminDashboard() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
-  const [stats, setStats] = useState<OrderStats | null>(null)
-  const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [statsLoading, setStatsLoading] = useState(true)
   const [sessionStartTime] = useState(new Date())
+
+  // SWR hook for order statistics
+  const { data: stats, error: statsError, isLoading: statsLoading } = useSWR(
+    isAuthenticated() && getCurrentUser()?.role === 'ADMIN' ? '/orders/stats/summary' : null,
+    undefined,
+    { revalidateOnFocus: false }
+  )
 
   useEffect(() => {
     // Check authentication
@@ -53,49 +57,19 @@ export default function AdminDashboard() {
 
     const currentUser = getCurrentUser()
     setUser(currentUser)
-    setLoading(false)
-
-    // Load order statistics (ADMIN only)
-    if (currentUser?.role === 'ADMIN') {
-      loadStats()
-      loadSystemStatus()
-    } else {
-      setStatsLoading(false)
-    }
   }, [router])
 
-  const loadStats = async () => {
-    try {
-      const response = await axios.get<OrderStats>('/orders/stats/summary')
-      setStats(response.data)
-    } catch (err) {
-      console.error('Failed to load statistics:', err)
-    } finally {
-      setStatsLoading(false)
-    }
+  const formatUptime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    return `${hours}h ${minutes}m`
   }
 
-  const loadSystemStatus = async () => {
-    try {
-      // Test database connection
-      const response = await axios.get('/orders/stats/summary')
-      const uptime = Math.floor((new Date().getTime() - sessionStartTime.getTime()) / 1000)
-
-      setSystemStatus({
-        db_status: 'connected',
-        today_orders: response.data.today_orders || 0,
-        server_uptime: formatUptime(uptime),
-        active_sessions: 1
-      })
-    } catch (err) {
-      console.error('Failed to load system status:', err)
-      setSystemStatus({
-        db_status: 'disconnected',
-        today_orders: 0,
-        server_uptime: 'N/A',
-        active_sessions: 0
-      })
-    }
+  const systemStatus = {
+    db_status: statsError ? 'disconnected' : 'connected' as const,
+    today_orders: stats?.today_orders || 0,
+    server_uptime: formatUptime(Math.floor((new Date().getTime() - sessionStartTime.getTime()) / 1000)),
+    active_sessions: 1
   }
 
   const formatUptime = (seconds: number): string => {
@@ -103,17 +77,6 @@ export default function AdminDashboard() {
     const minutes = Math.floor((seconds % 3600) / 60)
     const secs = seconds % 60
     return `${hours}h ${minutes}m ${secs}s`
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    )
   }
 
   if (!user) {
