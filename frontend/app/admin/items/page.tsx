@@ -26,15 +26,16 @@ interface Item {
 
 export default function AdminItemsPage() {
   const router = useRouter()
+  const [hasMounted, setHasMounted] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editingItem, setEditingItem] = useState<Item | null>(null)
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [toast, setToast] = useState({ message: '', type: 'success' as 'success' | 'error', isVisible: false })
 
-  // SWR hook for items data
+  // SWR hook for items data - use admin endpoint to get ALL items (active and inactive)
   const { data: items = [], error: itemsError, isLoading: itemsLoading, mutate: mutateItems } = useSWR(
-    isAuthenticated() ? '/items/' : null,
+    isAuthenticated() ? '/items/admin/all' : null,
     swrFetcher,
     swrConfig
   )
@@ -42,8 +43,10 @@ export default function AdminItemsPage() {
   // Form state
   const [formData, setFormData] = useState({
     name: '',
+    description: '',
     price_per_kg: '',
-    unit_type: 'per_kg'
+    unit_type: 'per_kg',
+    is_active: true
   })
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -52,6 +55,10 @@ export default function AdminItemsPage() {
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type, isVisible: true });
   };
+
+  useEffect(() => {
+    setHasMounted(true)
+  }, [])
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -85,8 +92,10 @@ export default function AdminItemsPage() {
     try {
       const formDataToSend = new FormData()
       formDataToSend.append('name', formData.name)
+      formDataToSend.append('description', formData.description)
       formDataToSend.append('price_per_kg', formData.price_per_kg)
       formDataToSend.append('unit_type', formData.unit_type)
+      formDataToSend.append('is_active', String(formData.is_active))
 
       if (imageFile) {
         formDataToSend.append('image', imageFile)
@@ -103,7 +112,7 @@ export default function AdminItemsPage() {
       }
 
       // Reset form
-      setFormData({ name: '', price_per_kg: '', unit_type: 'per_kg' })
+      setFormData({ name: '', description: '', price_per_kg: '', unit_type: 'per_kg', is_active: true })
       setImageFile(null)
       setImagePreview(null)
       setShowForm(false)
@@ -125,8 +134,10 @@ export default function AdminItemsPage() {
     setEditingItem(item)
     setFormData({
       name: item.name,
+      description: item.description || '',
       price_per_kg: item.price_per_kg,
-      unit_type: item.unit_type || 'per_kg'
+      unit_type: item.unit_type || 'per_kg',
+      is_active: item.is_active !== undefined ? item.is_active : true
     })
     setImagePreview(item.image_url)
     setShowForm(true)
@@ -150,10 +161,17 @@ export default function AdminItemsPage() {
   const handleCancelForm = () => {
     setShowForm(false)
     setEditingItem(null)
-    setFormData({ name: '', price_per_kg: '', unit_type: 'per_kg' })
+    setFormData({ name: '', description: '', price_per_kg: '', unit_type: 'per_kg', is_active: true })
     setImageFile(null)
     setImagePreview(null)
-    setError(null)
+  }
+
+  if (!hasMounted) {
+    return (
+      <div className="p-12 text-center">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    )
   }
 
   return (
@@ -224,6 +242,19 @@ export default function AdminItemsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="e.g., Fragrant basmati rice cooked with tender chicken"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Unit Type *
                 </label>
                 <select
@@ -274,6 +305,19 @@ export default function AdminItemsPage() {
                 )}
               </div>
 
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="is_active"
+                  checked={formData.is_active}
+                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
+                />
+                <label htmlFor="is_active" className="text-sm font-medium text-gray-700">
+                  Show on Home Page Menu
+                </label>
+              </div>
+
               <div className="flex gap-3">
                 <button
                   type="submit"
@@ -300,7 +344,7 @@ export default function AdminItemsPage() {
             <h2 className="text-xl font-bold text-gray-900">Menu Items</h2>
           </div>
 
-          {itemsLoading ? (
+          {!hasMounted || itemsLoading ? (
             <div className="p-12 text-center">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
               <p className="mt-4 text-gray-600">Loading items...</p>
@@ -325,6 +369,9 @@ export default function AdminItemsPage() {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Price
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Created
@@ -362,6 +409,13 @@ export default function AdminItemsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{formatCurrency(item.price_per_kg)}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          item.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {item.is_active ? 'Active' : 'Inactive'}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-500">

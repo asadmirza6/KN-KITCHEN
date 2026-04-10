@@ -128,12 +128,13 @@ def root():
 
 
 # Import and mount routers
-from .api import auth, items, media, orders, quotations, users, albums
+from .api import auth, items, media, orders, quotations, packages, users, albums
 
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(items.router, prefix="/items", tags=["Items"])
 app.include_router(media.router, prefix="/media", tags=["Media"])
 app.include_router(albums.router, prefix="/albums", tags=["Albums"])
+app.include_router(packages.router, prefix="/packages", tags=["Packages"])
 app.include_router(orders.router, prefix="/orders", tags=["Orders"])
 app.include_router(quotations.router, prefix="/quotations", tags=["Quotations"])
 app.include_router(users.router, prefix="/users", tags=["Users"])

@@ -21,23 +21,109 @@ router = APIRouter()
 @router.get("/")
 def get_items(session: Session = Depends(get_session)):
     """
-    Fetch all menu items.
+    Fetch all active menu items for home page display.
 
-    Returns list of all items with id, name, price_per_kg, image_url, created_at.
+    Returns list of active items with id, name, description, image_url, created_at.
     """
-    items = session.exec(select(Item)).all()
+    try:
+        # Try to filter by is_active first
+        items = session.exec(select(Item).where(Item.is_active == True)).all()
+    except Exception as e:
+        # Fallback: return all items if is_active column doesn't exist
+        print(f"Warning: Could not filter by is_active, returning all items: {e}")
+        try:
+            items = session.exec(select(Item)).all()
+        except Exception as e2:
+            print(f"Error fetching items: {e2}")
+            return []
 
-    return [
-        {
+    result = []
+    for item in items:
+        try:
+            result.append({
+                "id": item.id,
+                "name": item.name,
+                "description": getattr(item, 'description', None),
+                "unit_type": item.unit_type.value if hasattr(item.unit_type, 'value') else item.unit_type,
+                "price_per_kg": str(item.price_per_kg),
+                "image_url": item.image_url,
+                "is_active": getattr(item, 'is_active', True),
+                "created_at": item.created_at.isoformat()
+            })
+        except Exception as e:
+            print(f"Error serializing item {item.id}: {e}")
+            continue
+
+    return result
+
+
+@router.get("/admin/all")
+def get_all_items_admin(session: Session = Depends(get_session)):
+    """
+    Fetch ALL menu items (active and inactive) for admin management.
+    Used in Manage Items page to show all items regardless of status.
+
+    Returns list of all items with id, name, description, image_url, is_active, created_at.
+    """
+    try:
+        items = session.exec(select(Item)).all()
+    except Exception as e:
+        print(f"Error fetching all items: {e}")
+        return []
+
+    result = []
+    for item in items:
+        try:
+            result.append({
+                "id": item.id,
+                "name": item.name,
+                "description": getattr(item, 'description', None),
+                "unit_type": item.unit_type.value if hasattr(item.unit_type, 'value') else item.unit_type,
+                "price_per_kg": str(item.price_per_kg),
+                "image_url": item.image_url,
+                "is_active": getattr(item, 'is_active', True),
+                "created_at": item.created_at.isoformat()
+            })
+        except Exception as e:
+            print(f"Error serializing item {item.id}: {e}")
+            continue
+
+    return result
+
+
+@router.get("/{item_id}")
+def get_item(item_id: int, session: Session = Depends(get_session)):
+    """
+    Fetch a single menu item by ID.
+
+    Returns item details with id, name, description, price_per_kg, image_url, is_active, created_at.
+    """
+    try:
+        item = session.get(Item, item_id)
+        if not item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Item with id {item_id} not found"
+            )
+
+        return {
             "id": item.id,
             "name": item.name,
+            "description": getattr(item, 'description', None),
             "unit_type": item.unit_type.value if hasattr(item.unit_type, 'value') else item.unit_type,
             "price_per_kg": str(item.price_per_kg),
             "image_url": item.image_url,
+            "is_active": getattr(item, 'is_active', True),
             "created_at": item.created_at.isoformat()
         }
-        for item in items
-    ]
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching item {item_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching item: {str(e)}"
+        )
 
 
 @router.post("/", dependencies=[Depends(verify_jwt)])
@@ -45,6 +131,8 @@ async def create_item(
     name: str = Form(...),
     price_per_kg: str = Form(...),
     unit_type: str = Form("per_kg"),
+    description: str = Form(""),
+    is_active: bool = Form(True),
     image: Optional[UploadFile] = File(None),
     session: Session = Depends(get_session)
 ):
@@ -56,6 +144,8 @@ async def create_item(
         name: Item name
         price_per_kg: Price per unit (based on unit_type)
         unit_type: Unit type (per_kg, per_piece, per_liter)
+        description: Item description
+        is_active: Whether item is visible on home page
         image: Optional image file to upload to Cloudinary
 
     Returns:
@@ -96,34 +186,49 @@ async def create_item(
         # Create new item
         new_item = Item(
             name=name,
+            description=description.strip() if description and description.strip() else None,
             unit_type=unit_type_enum,
             price_per_kg=price_decimal,
             image_url=image_url,
-            cloudinary_public_id=cloudinary_public_id
+            cloudinary_public_id=cloudinary_public_id,
+            is_active=is_active
         )
 
-        session.add(new_item)
-        session.commit()
-        session.refresh(new_item)
+        try:
+            session.add(new_item)
+            session.commit()
+            session.refresh(new_item)
+        except Exception as db_error:
+            import traceback
+            print(f"Database error in create_item: {str(db_error)}")
+            print(f"Traceback: {traceback.format_exc()}")
+            session.rollback()
+            raise
 
         return {
             "id": new_item.id,
             "name": new_item.name,
+            "description": new_item.description,
             "unit_type": new_item.unit_type.value if hasattr(new_item.unit_type, 'value') else new_item.unit_type,
             "price_per_kg": str(new_item.price_per_kg),
             "image_url": new_item.image_url,
             "cloudinary_public_id": new_item.cloudinary_public_id,
+            "is_active": new_item.is_active,
             "created_at": new_item.created_at.isoformat()
         }
 
     except HTTPException:
         raise
-    except ValueError:
+    except ValueError as e:
+        print(f"ValueError in create_item: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid price format"
         )
     except Exception as e:
+        import traceback
+        print(f"Error in create_item: {str(e)}")
+        print(f"Traceback: {traceback.format_exc()}")
         session.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -137,6 +242,8 @@ async def update_item(
     name: str = Form(...),
     price_per_kg: str = Form(...),
     unit_type: str = Form("per_kg"),
+    description: str = Form(""),
+    is_active: bool = Form(True),
     image: Optional[UploadFile] = File(None),
     session: Session = Depends(get_session)
 ):
@@ -149,6 +256,8 @@ async def update_item(
         name: Updated item name
         price_per_kg: Updated price per unit
         unit_type: Updated unit type (per_kg, per_piece, per_liter)
+        description: Updated item description
+        is_active: Whether item is visible on home page
         image: Optional new image file (if provided, replaces existing)
 
     Returns:
@@ -177,8 +286,10 @@ async def update_item(
 
         # Update basic fields
         item.name = name
+        item.description = description.strip() if description and description.strip() else None
         item.unit_type = unit_type_enum
         item.price_per_kg = price_decimal
+        item.is_active = is_active
 
         # If new image provided, delete old one and upload new
         if image:
@@ -196,21 +307,31 @@ async def update_item(
             item.image_url = upload_result["secure_url"]
             item.cloudinary_public_id = upload_result["public_id"]
 
-        session.add(item)
-        session.commit()
-        session.refresh(item)
+        try:
+            session.add(item)
+            session.commit()
+            session.refresh(item)
+        except Exception as db_error:
+            import traceback
+            print(f"Database error in update_item: {str(db_error)}")
+            print(f"Traceback: {traceback.format_exc()}")
+            session.rollback()
+            raise
 
         return {
             "id": item.id,
             "name": item.name,
+            "description": item.description,
             "unit_type": item.unit_type.value if hasattr(item.unit_type, 'value') else item.unit_type,
             "price_per_kg": str(item.price_per_kg),
             "image_url": item.image_url,
             "cloudinary_public_id": item.cloudinary_public_id,
+            "is_active": item.is_active,
             "created_at": item.created_at.isoformat()
         }
 
-    except ValueError:
+    except ValueError as e:
+        print(f"ValueError in update_item: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid price format"
@@ -218,6 +339,9 @@ async def update_item(
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        print(f"Error in update_item: {str(e)}")
+        print(f"Traceback: {traceback.format_exc()}")
         session.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

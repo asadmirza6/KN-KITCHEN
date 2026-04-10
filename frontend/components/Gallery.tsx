@@ -38,8 +38,9 @@ export default function Gallery() {
       const response = await axios.get('/albums/')
       setAlbums(response.data)
     } catch (err: any) {
-      console.error('Failed to load albums:', err)
-      setError('Failed to load gallery albums')
+      console.warn('Failed to load albums from backend, showing empty gallery:', err.message)
+      // Silently fail - show empty gallery instead of error
+      setAlbums([])
     } finally {
       setLoading(false)
     }

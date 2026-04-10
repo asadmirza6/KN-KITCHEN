@@ -79,7 +79,7 @@ class ManualItemRequest(BaseModel):
 class CreateOrderRequest(BaseModel):
     """Request model for creating a new order"""
     customer_name: str
-    customer_email: str
+    customer_email: str | None = None
     customer_phone: str
     customer_address: str
     items: List[OrderItemRequest]

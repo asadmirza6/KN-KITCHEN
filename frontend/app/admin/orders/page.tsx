@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import useSWR from 'swr'
 import { isAuthenticated, getCurrentUser } from '@/services/authService'
@@ -53,8 +53,8 @@ interface OrderFormData {
 
 export default function AdminOrdersPage() {
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string>('')
   const [success, setSuccess] = useState<string>('')
@@ -69,7 +69,7 @@ export default function AdminOrdersPage() {
 
   // SWR hooks for data fetching
   const { data: items = [], error: itemsError, isLoading: itemsLoading, mutate: mutateItems } = useSWR(
-    isAuthenticated() ? '/items/' : null,
+    isAuthenticated() && getCurrentUser()?.role === 'ADMIN' ? '/items/admin/all' : null,
     undefined,
     { revalidateOnFocus: false }
   )
@@ -93,6 +93,10 @@ export default function AdminOrdersPage() {
   })
 
   useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
     if (!isAuthenticated()) {
       router.push('/login')
       return
@@ -101,7 +105,8 @@ export default function AdminOrdersPage() {
     setCurrentUser(user)
   }, [router])
 
-  const applyFilters = useCallback(() => {
+  // Compute filtered orders directly without storing in state
+  const getFilteredOrders = () => {
     let filtered = [...orders]
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -119,12 +124,10 @@ export default function AdminOrdersPage() {
     if (statusFilter !== 'all') {
       filtered = filtered.filter(order => order.status === statusFilter)
     }
-    setFilteredOrders(filtered)
-  }, [orders, dateFilter, statusFilter])
+    return filtered
+  }
 
-  useEffect(() => {
-    applyFilters()
-  }, [applyFilters])
+  const filteredOrders = getFilteredOrders()
 
   const handleAddItem = () => {
     if (items.length > 0) {
@@ -154,7 +157,7 @@ export default function AdminOrdersPage() {
   const handleAddManualItem = () => {
     setFormData(prev => ({
       ...prev,
-      manualItems: [...prev.manualItems, { name: '', quantity: 1, price: 0 }]
+      manualItems: [...prev.manualItems, { name: '', quantity: 0, price: 0 }]
     }))
   }
 
@@ -197,7 +200,7 @@ export default function AdminOrdersPage() {
     setFormError(''); setSuccess(''); setSubmitting(true)
     try {
       if (formData.selectedItems.length === 0 && formData.manualItems.length === 0) throw new Error('Select at least one item (menu or manual)')
-      if (!formData.customerName || !formData.customerEmail || !formData.customerPhone || !formData.customerAddress) throw new Error('Fill all customer details')
+      if (!formData.customerName || !formData.customerPhone || !formData.customerAddress) throw new Error('Fill all customer details')
 
       const totalAmount = calculateTotal()
       const advanceAmount = parseFloat(formData.advancePayment) || 0
@@ -320,7 +323,7 @@ export default function AdminOrdersPage() {
     )
   }
 
-  if (ordersLoading || itemsLoading) return <div className="p-10 text-center text-black font-bold">Loading...</div>
+  if (!mounted || ordersLoading || itemsLoading) return <div className="p-10 text-center text-black font-bold">Loading...</div>
 
   return (
     <div className="min-h-screen bg-transparent p-4 md:p-8">
@@ -365,7 +368,6 @@ export default function AdminOrdersPage() {
                   value={formData.customerEmail}
                   onChange={(e) => setFormData({...formData, customerEmail: e.target.value})}
                   className="border p-2 rounded w-full text-black font-bold"
-                  required
                 />
               </div>
               <div>

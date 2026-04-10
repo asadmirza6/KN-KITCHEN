@@ -44,6 +44,7 @@ interface QuotationFormData {
 
 export default function AdminQuotationsPage() {
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [showItemModal, setShowItemModal] = useState(false)
@@ -58,7 +59,7 @@ export default function AdminQuotationsPage() {
   )
 
   const { data: items = [], error: itemsError, isLoading: itemsLoading } = useSWR(
-    isAuthenticated() ? '/items/' : null,
+    isAuthenticated() ? '/items/admin/all' : null,
     swrFetcher,
     swrConfig
   )
@@ -75,6 +76,10 @@ export default function AdminQuotationsPage() {
     notes: '',
     discount: 0
   })
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -120,7 +125,7 @@ export default function AdminQuotationsPage() {
   const handleAddManualItem = () => {
     setFormData({
       ...formData,
-      manualItems: [...formData.manualItems, { name: '', quantity_kg: 1, price_per_kg: 0 }]
+      manualItems: [...formData.manualItems, { name: '', quantity_kg: 0, price_per_kg: 0 }]
     })
   }
 
@@ -167,7 +172,7 @@ export default function AdminQuotationsPage() {
   const handleCreateQuotation = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.customerName || !formData.customerEmail || !formData.customerPhone || !formData.customerAddress) {
+    if (!formData.customerName || !formData.customerPhone || !formData.customerAddress) {
       return
     }
 
@@ -367,14 +372,13 @@ export default function AdminQuotationsPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email *
+                    Email
                   </label>
                   <input
                     type="email"
                     value={formData.customerEmail}
                     onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    required
                   />
                 </div>
 
@@ -631,7 +635,7 @@ export default function AdminQuotationsPage() {
             </p>
           </div>
 
-          {quotationsLoading ? (
+          {!mounted || quotationsLoading ? (
             <div className="p-12 text-center">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
               <p className="mt-4 text-gray-600">Loading quotations...</p>

@@ -25,9 +25,11 @@ class Item(SQLModel, table=True):
     Attributes:
         id: Primary key (auto-increment)
         name: Item name (e.g., "Chicken Biryani")
+        description: Item description for display on menu
         price_per_kg: Price per kilogram in currency
         image_url: Cloudinary URL to uploaded image
         cloudinary_public_id: Cloudinary public ID for image deletion
+        is_active: Whether item is visible on home page menu
         created_at: Timestamp of item creation
     """
 
@@ -35,6 +37,13 @@ class Item(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(max_length=255, nullable=False, index=True)
+
+    description: Optional[str] = Field(
+        default=None,
+        max_length=1000,
+        nullable=True,
+        description="Item description for menu display"
+    )
 
     # Unit type for pricing
     unit_type: UnitType = Field(
@@ -52,15 +61,24 @@ class Item(SQLModel, table=True):
     )
 
     image_url: Optional[str] = Field(
+        default=None,
         max_length=500,
         nullable=True,
         description="Cloudinary URL to uploaded image"
     )
 
     cloudinary_public_id: Optional[str] = Field(
+        default=None,
         max_length=255,
         nullable=True,
         description="Cloudinary public ID for image deletion"
+    )
+
+    is_active: bool = Field(
+        default=True,
+        nullable=False,
+        index=True,
+        description="Whether item is visible on home page menu"
     )
 
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False, index=True)
@@ -70,8 +88,10 @@ class Item(SQLModel, table=True):
             "example": {
                 "id": 1,
                 "name": "Chicken Biryani",
+                "description": "Fragrant basmati rice cooked with tender chicken",
                 "price_per_kg": "250.00",
                 "image_url": "/uploads/1705420800_chicken_biryani.jpg",
+                "is_active": True,
                 "created_at": "2026-01-16T10:00:00"
             }
         }

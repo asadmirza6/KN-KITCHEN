@@ -42,8 +42,8 @@ export default function BannerSlider() {
         setBanners(LOCAL_BANNERS as any)
       }
     } catch (err: any) {
-      console.error('Failed to load banners:', err)
-      // Use local banners as fallback on error
+      console.warn('Failed to load banners from backend, using local fallback:', err.message)
+      // Use local banners as fallback on error (CORS, network, etc.)
       setBanners(LOCAL_BANNERS as any)
     } finally {
       setLoading(false)

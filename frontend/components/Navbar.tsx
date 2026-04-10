@@ -34,13 +34,8 @@ export default function Navbar() {
     router.push('/login')
   }
 
-  // Prevent hydration mismatch
-  if (!mounted) {
-    return null
-  }
-
   return (
-    <nav className="bg-white shadow-lg">
+    <nav className="sticky top-0 z-50 bg-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo */}
@@ -64,6 +59,12 @@ export default function Navbar() {
               className="text-gray-700 hover:text-indigo-600 px-3 py-2 text-sm font-medium transition-colors"
             >
               HOME
+            </a>
+            <a
+              href="#packages"
+              className="text-gray-700 hover:text-indigo-600 px-3 py-2 text-sm font-medium transition-colors"
+            >
+              PACKAGES
             </a>
             <a
               href="#about"
@@ -93,7 +94,7 @@ export default function Navbar() {
 
           {/* Login/Logout Button (Right) */}
           <div className="flex items-center space-x-4">
-            {user ? (
+            {mounted && user ? (
               <>
                 {user.role === 'ADMIN' && (
                   <a
@@ -113,61 +114,71 @@ export default function Navbar() {
                   Logout
                 </button>
               </>
-            ) : (
+            ) : mounted ? (
               <button
                 onClick={handleLogin}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 Login
               </button>
+            ) : (
+              <div className="w-20 h-10 bg-gray-200 rounded-md animate-pulse" />
             )}
           </div>
         </div>
       </div>
 
       {/* Mobile Navigation Menu */}
-      <div className="md:hidden border-t border-gray-200">
-        <div className="px-2 pt-2 pb-3 space-y-1">
-          <a
-            href="/"
-            className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium"
-          >
-            HOME
-          </a>
-          <a
-            href="#about"
-            className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium"
-          >
-            ABOUT
-          </a>
-          <a
-            href="#gallery"
-            className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium"
-          >
-            GALLERY
-          </a>
-          <a
-            href="#contact"
-            className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium"
-          >
-            CONTACT
-          </a>
-          <a
-            href="#feedback"
-            className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium"
-          >
-            FEEDBACK
-          </a>
-          {user && user.role === 'ADMIN' && (
+      {mounted && (
+        <div className="md:hidden border-t border-gray-200">
+          <div className="px-2 pt-2 pb-3 space-y-1">
             <a
-              href="/admin"
+              href="/"
               className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium"
             >
-              Admin Panel
+              HOME
             </a>
-          )}
+            <a
+              href="#packages"
+              className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium"
+            >
+              PACKAGES
+            </a>
+            <a
+              href="#about"
+              className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium"
+            >
+              ABOUT
+            </a>
+            <a
+              href="#gallery"
+              className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium"
+            >
+              GALLERY
+            </a>
+            <a
+              href="#contact"
+              className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium"
+            >
+              CONTACT
+            </a>
+            <a
+              href="#feedback"
+              className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium"
+            >
+              FEEDBACK
+            </a>
+            {user && user.role === 'ADMIN' && (
+              <a
+                href="/admin"
+                className="block text-gray-700 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium"
+              >
+                Admin Panel
+              </a>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </nav>
   )
 }

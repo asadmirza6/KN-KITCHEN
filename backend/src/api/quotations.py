@@ -38,7 +38,7 @@ class ManualItemRequest(BaseModel):
 class CreateQuotationRequest(BaseModel):
     """Request model for creating a new quotation"""
     customer_name: str
-    customer_email: str
+    customer_email: str | None = None
     customer_phone: str
     customer_address: str
     items: List[QuotationItemRequest] = []
@@ -54,7 +54,7 @@ class CreateQuotationRequest(BaseModel):
 class UpdateQuotationRequest(BaseModel):
     """Request model for updating a quotation"""
     customer_name: str
-    customer_email: str
+    customer_email: str | None = None
     customer_phone: str
     customer_address: str
     items: List[QuotationItemRequest] = []

@@ -6,11 +6,13 @@
  */
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { fetchItems } from '@/services/itemsService'
 import type { Item } from '@/types/Item'
 
 
 export default function MenuItems() {
+  const router = useRouter()
   const [items, setItems] = useState<Item[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -77,7 +79,8 @@ export default function MenuItems() {
           {items.map((item) => (
             <div
               key={item.id}
-              className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden"
+              onClick={() => router.push(`/menu/${item.id}`)}
+              className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden cursor-pointer"
             >
               {/* Item Image */}
               {item.image_url ? (
