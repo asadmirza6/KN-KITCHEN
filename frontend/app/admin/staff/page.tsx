@@ -97,10 +97,13 @@ export default function AdminStaffPage() {
         throw new Error('Monthly salary must be greater than 0')
       }
 
-      await axios.post('/staff', {
-        name: staffFormData.name,
-        role: staffFormData.role,
-        monthly_salary: staffFormData.monthly_salary,
+      const formDataToSend = new FormData()
+      formDataToSend.append('name', staffFormData.name)
+      formDataToSend.append('role', staffFormData.role)
+      formDataToSend.append('monthly_salary', staffFormData.monthly_salary.toString())
+
+      await axios.post('/staff', formDataToSend, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       })
 
       setSuccess('Staff member created successfully!')
@@ -128,10 +131,13 @@ export default function AdminStaffPage() {
         throw new Error('Amount must be greater than 0')
       }
 
-      await axios.post('/staff-transactions', {
-        staff_id: transactionFormData.staff_id,
-        amount: transactionFormData.amount,
-        transaction_type: transactionFormData.transaction_type,
+      const formDataToSend = new FormData()
+      formDataToSend.append('staff_id', transactionFormData.staff_id.toString())
+      formDataToSend.append('amount', transactionFormData.amount.toString())
+      formDataToSend.append('transaction_type', transactionFormData.transaction_type)
+
+      await axios.post('/staff-transactions', formDataToSend, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       })
 
       setSuccess(`${transactionFormData.transaction_type} recorded successfully!`)

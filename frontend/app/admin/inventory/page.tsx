@@ -82,11 +82,14 @@ export default function AdminInventoryPage() {
         throw new Error('Unit is required')
       }
 
-      const response = await axios.post('/inventory', {
-        item_name: formData.item_name,
-        unit: formData.unit,
-        current_stock: formData.current_stock,
-        average_price: formData.average_price,
+      const formDataToSend = new FormData()
+      formDataToSend.append('item_name', formData.item_name)
+      formDataToSend.append('unit', formData.unit)
+      formDataToSend.append('current_stock', formData.current_stock.toString())
+      formDataToSend.append('average_price', formData.average_price.toString())
+
+      const response = await axios.post('/inventory', formDataToSend, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       })
 
       setSuccess('Inventory item created successfully!')

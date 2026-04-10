@@ -85,10 +85,13 @@ export default function AdminVendorsPage() {
         throw new Error('Category is required')
       }
 
-      await axios.post('/vendors', {
-        name: formData.name,
-        contact_info: formData.contact_info,
-        category: formData.category,
+      const formDataToSend = new FormData()
+      formDataToSend.append('name', formData.name)
+      formDataToSend.append('contact_info', formData.contact_info)
+      formDataToSend.append('category', formData.category)
+
+      await axios.post('/vendors', formDataToSend, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       })
 
       setSuccess('Vendor created successfully!')
