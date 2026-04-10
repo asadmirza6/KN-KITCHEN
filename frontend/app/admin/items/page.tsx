@@ -28,6 +28,7 @@ export default function AdminItemsPage() {
   const router = useRouter()
   const [showForm, setShowForm] = useState(false)
   const [editingItem, setEditingItem] = useState<Item | null>(null)
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [toast, setToast] = useState({ message: '', type: 'success' as 'success' | 'error', isVisible: false })
 
@@ -335,7 +336,7 @@ export default function AdminItemsPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {items.map((item) => (
-                    <tr key={item.id} className="hover:bg-gray-50">
+                    <tr key={item.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedItem(item)}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {item.image_url ? (
                           <img
@@ -367,7 +368,7 @@ export default function AdminItemsPage() {
                           {new Date(item.created_at).toLocaleDateString()}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => handleEdit(item)}
                           className="text-indigo-600 hover:text-indigo-900 mr-4"
@@ -387,6 +388,121 @@ export default function AdminItemsPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+        </div>
+
+        {/* Side Drawer Overlay */}
+        {selectedItem && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            onClick={() => setSelectedItem(null)}
+          />
+        )}
+
+        {/* Side Drawer */}
+        <div
+          className={`fixed top-0 left-0 h-full w-96 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
+            selectedItem ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          {selectedItem && (
+            <div className="h-full flex flex-col overflow-y-auto">
+              {/* Header with Close Button */}
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-900">Item Details</h2>
+                <button
+                  onClick={() => setSelectedItem(null)}
+                  className="text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Drawer Content */}
+              <div className="flex-1 px-6 py-6 space-y-6">
+                {/* Product Image */}
+                <div className="w-full">
+                  {selectedItem.image_url ? (
+                    <img
+                      src={selectedItem.image_url}
+                      alt={selectedItem.name}
+                      className="w-full h-64 object-cover rounded-lg"
+                    />
+                  ) : (
+                    <div className="w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center">
+                      <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+
+                {/* Item Name */}
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">{selectedItem.name}</h3>
+                </div>
+
+                {/* Category/Unit Type */}
+                <div>
+                  <p className="text-sm text-slate-600 mb-2">Unit Type</p>
+                  <span className="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                    {selectedItem.unit_type === 'per_kg' ? 'per KG' : selectedItem.unit_type === 'per_piece' ? 'per Piece' : 'per Liter'}
+                  </span>
+                </div>
+
+                {/* Price */}
+                <div>
+                  <p className="text-sm text-slate-600 mb-2">Price</p>
+                  <p className="text-3xl font-bold text-indigo-600">{formatCurrency(selectedItem.price_per_kg)}</p>
+                </div>
+
+                {/* Created Date */}
+                <div>
+                  <p className="text-sm text-slate-600 mb-2">Created</p>
+                  <p className="text-slate-700">{new Date(selectedItem.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                </div>
+
+                {/* Description Section */}
+                <div className="pt-4 border-t border-gray-200">
+                  <p className="text-sm text-slate-600 mb-2">Details</p>
+                  <p className="text-slate-700 leading-relaxed">
+                    This is a premium menu item available for catering orders. The price shown is per {selectedItem.unit_type === 'per_kg' ? 'kilogram' : selectedItem.unit_type === 'per_piece' ? 'piece' : 'liter'}.
+                  </p>
+                </div>
+              </div>
+
+              {/* Footer Actions */}
+              <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 space-y-3">
+                <button
+                  onClick={() => {
+                    handleEdit(selectedItem)
+                    setSelectedItem(null)
+                  }}
+                  className="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                >
+                  Edit Item
+                </button>
+                {currentUser?.role === 'ADMIN' && (
+                  <button
+                    onClick={() => {
+                      handleDelete(selectedItem)
+                      setSelectedItem(null)
+                    }}
+                    className="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium"
+                  >
+                    Delete Item
+                  </button>
+                )}
+                <button
+                  onClick={() => setSelectedItem(null)}
+                  className="w-full bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           )}
         </div>

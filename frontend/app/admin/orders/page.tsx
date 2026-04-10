@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import useSWR from 'swr'
 import { isAuthenticated, getCurrentUser } from '@/services/authService'
@@ -101,11 +101,7 @@ export default function AdminOrdersPage() {
     setCurrentUser(user)
   }, [router])
 
-  useEffect(() => {
-    applyFilters()
-  }, [orders, dateFilter, statusFilter])
-
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filtered = [...orders]
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -124,7 +120,11 @@ export default function AdminOrdersPage() {
       filtered = filtered.filter(order => order.status === statusFilter)
     }
     setFilteredOrders(filtered)
-  }
+  }, [orders, dateFilter, statusFilter])
+
+  useEffect(() => {
+    applyFilters()
+  }, [applyFilters])
 
   const handleAddItem = () => {
     if (items.length > 0) {
