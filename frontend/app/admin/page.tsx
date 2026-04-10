@@ -340,6 +340,106 @@ export default function AdminDashboard() {
                 </button>
               </div>
             </div>
+
+            {/* ERP Section Header */}
+          </div>
+        </div>
+
+        {/* ERP Management Section */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">ERP Management</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Inventory Management Card */}
+            {user.role === 'ADMIN' && (
+              <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+                <div className="p-6">
+                  <div className="flex items-center justify-center w-12 h-12 bg-cyan-100 rounded-lg mb-4">
+                    <svg className="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m0 0l8 4m-8-4v10l8 4m0-10l8 4m-8-4v10M7 12l8 4m0 0l8-4" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Inventory Management</h3>
+                  <p className="text-gray-600 text-sm mb-4">
+                    Track stock levels, manage items, and monitor inventory value.
+                  </p>
+                  <button
+                    onClick={() => router.push('/admin/inventory')}
+                    className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                  >
+                    Manage Inventory
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Vendors Management Card */}
+            {user.role === 'ADMIN' && (
+              <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+                <div className="p-6">
+                  <div className="flex items-center justify-center w-12 h-12 bg-orange-100 rounded-lg mb-4">
+                    <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5.581m0 0H9m0 0h5.581M9 21h0M5 21h0" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Vendors Management</h3>
+                  <p className="text-gray-600 text-sm mb-4">
+                    Manage vendor information and track credit/debit balances.
+                  </p>
+                  <button
+                    onClick={() => router.push('/admin/vendors')}
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                  >
+                    Manage Vendors
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Staff Management Card */}
+            {user.role === 'ADMIN' && (
+              <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+                <div className="p-6">
+                  <div className="flex items-center justify-center w-12 h-12 bg-teal-100 rounded-lg mb-4">
+                    <svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM6 20a9 9 0 0118 0v2h2v-2a11 11 0 00-20 0v2h2v-2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Staff Management</h3>
+                  <p className="text-gray-600 text-sm mb-4">
+                    Manage staff members, salaries, and advance payments.
+                  </p>
+                  <button
+                    onClick={() => router.push('/admin/staff')}
+                    className="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                  >
+                    Manage Staff
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Purchase Records Card */}
+            {user.role === 'ADMIN' && (
+              <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+                <div className="p-6">
+                  <div className="flex items-center justify-center w-12 h-12 bg-violet-100 rounded-lg mb-4">
+                    <svg className="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Purchase Records</h3>
+                  <p className="text-gray-600 text-sm mb-4">
+                    Track purchases from vendors and manage inventory updates.
+                  </p>
+                  <button
+                    onClick={() => router.push('/admin/purchase-records')}
+                    className="w-full bg-violet-600 hover:bg-violet-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                  >
+                    View Purchases
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
