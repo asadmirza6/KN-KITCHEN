@@ -308,7 +308,10 @@ export default function AdminOrdersPage() {
     try {
       const res = await axios.put(`/orders/${id}/status`, { status: newStatus })
       setSuccess(`Order status changed to ${newStatus}`)
-      mutateOrders()
+      // Wait a moment then refresh the orders list
+      setTimeout(() => {
+        mutateOrders()
+      }, 500)
     } catch (err: any) {
       setFormError(err.response?.data?.detail || 'Failed to change status')
     }
@@ -329,7 +332,9 @@ export default function AdminOrdersPage() {
       pending: 'bg-yellow-200 text-yellow-900',
       partial: 'bg-blue-200 text-blue-900',
       paid: 'bg-green-200 text-green-900',
-      cancelled: 'bg-red-200 text-red-900'
+      cancelled: 'bg-red-200 text-red-900',
+      Processing: 'bg-orange-200 text-orange-900',
+      Completed: 'bg-green-200 text-green-900'
     }
     return (
       <span className={`px-3 py-1 text-xs font-semibold rounded-full ${colors[s] || 'bg-gray-200 text-gray-900'}`}>
