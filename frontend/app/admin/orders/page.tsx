@@ -8,6 +8,7 @@ import type { Item } from '@/types/Item'
 import type { User } from '@/types/User'
 import axios from '@/lib/axios'
 import { formatCurrency } from '@/lib/currency'
+import OrderDetailsModal from '@/components/OrderDetailsModal'
 
 interface OrderItem {
   itemId: number
@@ -881,123 +882,11 @@ export default function AdminOrdersPage() {
       )}
 
       {/* View Details Modal */}
-      {showDetailsModal && selectedOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-4 md:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl md:text-2xl font-bold text-black">Order Details #{selectedOrder.id}</h2>
-              <button onClick={() => setShowDetailsModal(false)} className="text-black hover:text-gray-700 text-2xl font-bold">&times;</button>
-            </div>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-bold text-black">Customer Name</p>
-                  <p className="font-bold text-black">{selectedOrder.customer_name}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-black">Email</p>
-                  <p className="font-bold text-black">{selectedOrder.customer_email}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-black">Phone</p>
-                  <p className="font-bold text-black">{selectedOrder.customer_phone}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-black">Address</p>
-                  <p className="font-bold text-black">{selectedOrder.customer_address}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-black">Order Date</p>
-                  <p className="font-bold text-black">{new Date(selectedOrder.created_at).toLocaleString()}</p>
-                </div>
-                {selectedOrder.delivery_date && (
-                  <div>
-                    <p className="text-sm font-bold text-black">Delivery Date</p>
-                    <p className="font-bold text-black">{selectedOrder.delivery_date}</p>
-                  </div>
-                )}
-                <div>
-                  <p className="text-sm font-bold text-black">Status</p>
-                  <div className="mt-1">{getStatusBadge(selectedOrder.status)}</div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="font-bold text-black mb-2">Order Items</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full border text-sm md:text-base">
-                    <thead className="bg-gray-200">
-                      <tr>
-                        <th className="p-2 text-left border text-black font-bold">Item</th>
-                        <th className="p-2 text-left border text-black font-bold">Quantity</th>
-                        <th className="p-2 text-left border text-black font-bold">Rate</th>
-                        <th className="p-2 text-left border text-black font-bold">Subtotal</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedOrder.items.map((item: any, idx: number) => (
-                        <tr key={idx}>
-                          <td className="p-2 border text-black font-bold">{item.item_name}</td>
-                          <td className="p-2 border text-black font-bold">{item.quantity_kg} kg</td>
-                          <td className="p-2 border text-black font-bold">{formatCurrency(item.price_per_kg)}</td>
-                          <td className="p-2 border text-black font-bold">{formatCurrency(item.subtotal)}</td>
-                        </tr>
-                      ))}
-                      {selectedOrder.manual_items && selectedOrder.manual_items.length > 0 && (
-                        <>
-                          <tr className="bg-yellow-50">
-                            <td colSpan={4} className="p-2 border text-black font-bold text-center">Manual Items</td>
-                          </tr>
-                          {selectedOrder.manual_items.map((item: any, idx: number) => (
-                            <tr key={`manual-${idx}`}>
-                              <td className="p-2 border text-black font-bold">{item.name}</td>
-                              <td className="p-2 border text-black font-bold">{item.quantity_kg} kg</td>
-                              <td className="p-2 border text-black font-bold">{formatCurrency(item.price_per_kg)}</td>
-                              <td className="p-2 border text-black font-bold">{formatCurrency(item.subtotal)}</td>
-                            </tr>
-                          ))}
-                        </>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="border-t pt-4 bg-gray-50 p-3 rounded">
-                <div className="flex justify-between mb-2">
-                  <span className="font-bold text-black">Total Amount:</span>
-                  <span className="font-bold text-black">{formatCurrency(parseFloat(selectedOrder.total_amount))}</span>
-                </div>
-                <div className="flex justify-between mb-2">
-                  <span className="font-bold text-black">Advance Payment:</span>
-                  <span className="font-bold text-black">{formatCurrency(parseFloat(selectedOrder.advance_payment))}</span>
-                </div>
-                <div className="flex justify-between mb-2">
-                  <span className="font-bold text-black">Balance Due:</span>
-                  <span className="text-red-600 font-bold">{formatCurrency(parseFloat(selectedOrder.balance))}</span>
-                </div>
-              </div>
-
-              {selectedOrder.notes && (
-                <div>
-                  <p className="text-sm font-bold text-black">Notes</p>
-                  <p className="font-bold text-black">{selectedOrder.notes}</p>
-                </div>
-              )}
-
-              <div className="flex flex-col md:flex-row gap-2">
-                <button onClick={() => downloadInvoice(selectedOrder.id)} className="flex-1 bg-green-600 text-white px-4 py-2 rounded font-bold hover:bg-green-700">
-                  Download Invoice
-                </button>
-                <button onClick={() => setShowDetailsModal(false)} className="flex-1 bg-gray-300 text-black px-4 py-2 rounded font-bold hover:bg-gray-400">
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <OrderDetailsModal
+        order={selectedOrder}
+        isOpen={showDetailsModal}
+        onClose={() => setShowDetailsModal(false)}
+      />
       </div>
     </div>
   )

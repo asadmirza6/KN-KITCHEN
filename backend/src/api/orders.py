@@ -155,6 +155,7 @@ def calculate_profit_for_order(order: Order, session: Session) -> dict:
         total_revenue = Decimal("0.00")
         total_cost = Decimal("0.00")
         profit_details = []
+        warnings = []
 
         for item in order.items:
             item_id = item.get('item_id')
@@ -171,12 +172,18 @@ def calculate_profit_for_order(order: Order, session: Session) -> dict:
 
             item_cost = Decimal("0.00")
 
-            # Calculate total cost based on ingredients
-            for recipe in recipes:
-                ingredient = session.get(Inventory, recipe.ingredient_id)
-                if ingredient:
-                    ingredient_cost = quantity * Decimal(str(recipe.quantity_required)) * ingredient.average_price
-                    item_cost += ingredient_cost
+            # If no recipe found, warn user
+            if not recipes:
+                warnings.append(f"Recipe missing for item {item.get('item_name')} - Profit cannot be calculated accurately")
+                # Use sale price as cost estimate if no recipe
+                item_cost = quantity * sale_price * Decimal("0.5")  # Assume 50% cost
+            else:
+                # Calculate total cost based on ingredients
+                for recipe in recipes:
+                    ingredient = session.get(Inventory, recipe.ingredient_id)
+                    if ingredient:
+                        ingredient_cost = quantity * Decimal(str(recipe.quantity_required)) * ingredient.average_price
+                        item_cost += ingredient_cost
 
             # Calculate revenue and profit for this item
             item_revenue = quantity * sale_price
@@ -202,6 +209,8 @@ def calculate_profit_for_order(order: Order, session: Session) -> dict:
         print(f"  Total Revenue: {total_revenue}")
         print(f"  Total Cost: {total_cost}")
         print(f"  Net Profit: {net_profit}")
+        if warnings:
+            print(f"  Warnings: {warnings}")
 
         return {
             "success": True,
@@ -209,7 +218,8 @@ def calculate_profit_for_order(order: Order, session: Session) -> dict:
             "total_cost": float(total_cost),
             "net_profit": float(net_profit),
             "profit_margin": float((net_profit / total_revenue * 100) if total_revenue > 0 else 0),
-            "profit_details": profit_details
+            "profit_details": profit_details,
+            "warnings": warnings
         }
     except Exception as e:
         print(f"DEBUG: Error calculating profit: {str(e)}")
@@ -699,7 +709,14 @@ def update_order(
     if old_status != "Completed" and order.status == "Completed":
         profit_result = calculate_profit_for_order(order, session)
         if profit_result.get("success"):
+            # Save profit data to order
+            order.calculated_profit = Decimal(str(profit_result.get("net_profit", 0)))
+            order.total_cost = Decimal(str(profit_result.get("total_cost", 0)))
+            order.profit_margin = Decimal(str(profit_result.get("profit_margin", 0)))
             status_change_info["profit_calculation"] = profit_result
+        else:
+            # If profit calculation fails, show warning
+            status_change_info["profit_warning"] = profit_result.get("error", "Could not calculate profit")
 
     session.add(order)
     session.commit()
@@ -719,6 +736,9 @@ def update_order(
         "delivery_date": order.delivery_date,
         "notes": order.notes,
         "status": order.status,
+        "calculated_profit": str(order.calculated_profit),
+        "total_cost": str(order.total_cost),
+        "profit_margin": str(order.profit_margin),
         "created_at": order.created_at.isoformat()
     }
 

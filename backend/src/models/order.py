@@ -81,6 +81,29 @@ class Order(SQLModel, table=True):
     notes: Optional[str] = Field(max_length=500, nullable=True, description="Additional notes (optional)")
     status: str = Field(max_length=20, default="pending", nullable=False, index=True, description="Order status: pending, partial, paid, cancelled")
 
+    # Profit tracking
+    calculated_profit: Decimal = Field(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        nullable=False,
+        description="Calculated profit when order is completed"
+    )
+    profit_margin: Decimal = Field(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        nullable=False,
+        description="Profit margin percentage"
+    )
+    total_cost: Decimal = Field(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        nullable=False,
+        description="Total ingredient cost for the order"
+    )
+
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False, index=True)
 
     class Config:
