@@ -1,7 +1,7 @@
 """Add profit tracking fields to orders table
 
 Revision ID: add_profit_tracking
-Revises:
+Revises: 20260410_001
 Create Date: 2026-04-11 06:53:05.319000
 
 """
@@ -12,7 +12,7 @@ from decimal import Decimal
 
 # revision identifiers, used by Alembic.
 revision = 'add_profit_tracking'
-down_revision = None
+down_revision = '20260410_001'
 branch_labels = None
 depends_on = None
 

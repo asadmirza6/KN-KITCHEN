@@ -72,10 +72,16 @@ async def startup_validation():
 # In links ko check karlein ke spelling aur https sahi ho
 cors_origins = [
     "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3002",
     "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+    "http://127.0.0.1:3002",
     "localhost:3000",
-    "https://kn-kitchen.vercel.app",  
-    "https://kn-kitchen-frontend.vercel.app", 
+    "localhost:3001",
+    "localhost:3002",
+    "https://kn-kitchen.vercel.app",
+    "https://kn-kitchen-frontend.vercel.app",
 ]
 
 app.add_middleware(

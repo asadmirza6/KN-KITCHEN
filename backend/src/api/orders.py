@@ -605,6 +605,59 @@ def get_order(
     }
 
 
+class StatusUpdateRequest(BaseModel):
+    status: str
+
+
+@router.put("/{order_id}/status", dependencies=[Depends(require_admin)])
+def update_order_status(
+    order_id: int,
+    request: StatusUpdateRequest,
+    current_user: User = Depends(require_admin),
+    session: Session = Depends(get_session)
+):
+    """Update order status and trigger inventory deduction or profit calculation"""
+    print(f"DEBUG: PUT /orders/{order_id}/status called with status={request.status}")
+
+    order = session.exec(select(Order).where(Order.id == order_id)).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    # Validate that order has items
+    if not order.items or len(order.items) == 0:
+        raise HTTPException(status_code=400, detail="Cannot process order: No items found in JSON.")
+
+    print(f"DEBUG: Processing items from DB: {order.items}")
+
+    new_status = request.status
+
+    # If changing to Processing, deduct inventory
+    if new_status == "Processing":
+        result = deduct_inventory_for_order(order, session)
+        if not result.get("success"):
+            raise HTTPException(status_code=400, detail=result.get("error", "Inventory deduction failed"))
+
+    # If changing to Completed, calculate profit
+    elif new_status == "Completed":
+        result = calculate_profit_for_order(order, session)
+        if result.get("success"):
+            order.calculated_profit = Decimal(str(result.get("net_profit", 0)))
+            order.total_cost = Decimal(str(result.get("total_cost", 0)))
+            order.profit_margin = Decimal(str(result.get("profit_margin", 0)))
+
+    # Update status
+    order.status = new_status
+    session.add(order)
+    session.commit()
+    session.refresh(order)
+
+    return {
+        "id": order.id,
+        "status": order.status,
+        "message": f"Order status updated to {new_status}"
+    }
+
+
 @router.patch("/{order_id}", dependencies=[Depends(require_admin)])
 def update_order(
     order_id: int,
@@ -1087,161 +1140,5 @@ def download_invoice(
     )
 
 
-class StatusUpdateRequest(BaseModel):
-    status: str
 
-
-@router.put("/{order_id}/status", dependencies=[Depends(require_admin)])
-def update_order_status(order_id: int, request: StatusUpdateRequest, session: Session = Depends(get_session)):
-    """Update order status and trigger inventory deduction or profit calculation"""
-    import logging
-    logger = logging.getLogger(__name__)
-
-    order = session.exec(select(Order).where(Order.id == order_id)).first()
-    if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
-
-    old_status = order.status
-    new_status = request.status
-
-    logger.info(f"Updating Order {order_id} status from {old_status} to {new_status}")
-    logger.info(f"Order items: {order.items}")
-
-    response_data = {
-        "id": order.id,
-        "status": new_status,
-        "message": f"Order status changed from {old_status} to {new_status}"
-    }
-
-    try:
-        # If changing to Processing, deduct inventory
-        if new_status == "Processing":
-            logger.info(f"Processing inventory deduction for Order {order_id}")
-            items_list = order.items if isinstance(order.items, list) else []
-            logger.info(f"Items list: {items_list}")
-
-            for item in items_list:
-                item_id = item.get('item_id')
-                quantity = float(item.get('quantity_kg', 0))
-                item_name = item.get('item_name', 'Unknown')
-
-                logger.info(f"Processing item {item_id} ({item_name}) with quantity {quantity}")
-
-                # Get all recipes for this item
-                recipes = session.exec(select(Recipe).where(Recipe.product_id == item_id)).all()
-                logger.info(f"Found {len(recipes)} recipes for item {item_id}")
-
-                if not recipes:
-                    logger.warning(f"No recipes found for item {item_id}")
-                    continue
-
-                for recipe in recipes:
-                    inventory = session.exec(select(Inventory).where(Inventory.id == recipe.ingredient_id)).first()
-                    if not inventory:
-                        logger.warning(f"Inventory not found for ingredient {recipe.ingredient_id}")
-                        continue
-
-                    deduction = quantity * float(recipe.quantity_required)
-                    current_qty = float(inventory.current_stock)
-
-                    logger.info(f"Ingredient: {inventory.item_name}, Current: {current_qty}, Need: {deduction}")
-
-                    if current_qty < deduction:
-                        raise HTTPException(
-                            status_code=400,
-                            detail=f"Insufficient {inventory.item_name}. Need {deduction}, have {current_qty}"
-                        )
-
-                    inventory.current_stock = current_qty - deduction
-                    session.add(inventory)
-                    logger.info(f"Deducted {deduction} from {inventory.item_name}")
-
-            session.commit()
-            response_data["inventory_deducted"] = True
-            logger.info(f"Inventory deduction complete for Order {order_id}")
-
-        # If changing to Completed, calculate profit
-        elif new_status == "Completed":
-            logger.info(f"Calculating profit for Order {order_id}")
-            total_revenue = Decimal('0')
-            total_cost = Decimal('0')
-            profit_details = []
-            warnings = []
-
-            items_list = order.items if isinstance(order.items, list) else []
-
-            for item in items_list:
-                item_id = item.get('item_id')
-                quantity = float(item.get('quantity_kg', 0))
-                price = float(item.get('price_per_kg', 0))
-                item_name = item.get('item_name', 'Unknown')
-
-                item_revenue = Decimal(str(quantity)) * Decimal(str(price))
-                total_revenue += item_revenue
-                logger.info(f"Item {item_name}: Qty={quantity}, Price={price}, Revenue={item_revenue}")
-
-                # Get all recipes for this item
-                recipes = session.exec(select(Recipe).where(Recipe.product_id == item_id)).all()
-                logger.info(f"Found {len(recipes)} recipes for item {item_id}")
-
-                if not recipes:
-                    warnings.append(f"Recipe missing for {item_name}")
-                    item_cost = item_revenue * Decimal('0.5')
-                    logger.warning(f"No recipe for {item_name}, estimating cost as 50%")
-                else:
-                    item_cost = Decimal('0')
-                    for recipe in recipes:
-                        inventory = session.exec(select(Inventory).where(Inventory.id == recipe.ingredient_id)).first()
-                        if inventory:
-                            ingredient_cost = Decimal(str(quantity)) * Decimal(str(recipe.quantity_required)) * Decimal(str(inventory.average_price or 0))
-                            item_cost += ingredient_cost
-                            logger.info(f"  {inventory.item_name}: {ingredient_cost}")
-
-                total_cost += item_cost
-                profit_details.append({
-                    "item_id": item_id,
-                    "item_name": item_name,
-                    "quantity": quantity,
-                    "sale_price": price,
-                    "revenue": float(item_revenue),
-                    "cost": float(item_cost),
-                    "profit": float(item_revenue - item_cost)
-                })
-
-            net_profit = total_revenue - total_cost
-            profit_margin = (net_profit / total_revenue * 100) if total_revenue > 0 else Decimal('0')
-
-            order.calculated_profit = net_profit
-            order.total_cost = total_cost
-            order.profit_margin = profit_margin
-
-            logger.info(f"Profit: Revenue={total_revenue}, Cost={total_cost}, Profit={net_profit}, Margin={profit_margin}%")
-
-            response_data["profit_calculation"] = {
-                "success": True,
-                "total_revenue": float(total_revenue),
-                "total_cost": float(total_cost),
-                "net_profit": float(net_profit),
-                "profit_margin": float(profit_margin),
-                "profit_details": profit_details,
-                "warnings": warnings
-            }
-
-        # Update status
-        order.status = new_status
-        session.add(order)
-        session.commit()
-        session.refresh(order)
-
-        logger.info(f"✅ Order {order_id} status updated to {new_status}")
-        return response_data
-
-    except HTTPException as http_e:
-        session.rollback()
-        logger.error(f"HTTP Exception: {str(http_e)}")
-        raise
-    except Exception as e:
-        session.rollback()
-        logger.error(f"❌ Error updating order: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=400, detail=f"Error: {str(e)}")
 

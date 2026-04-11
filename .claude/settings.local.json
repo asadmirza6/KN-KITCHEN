@@ -58,7 +58,10 @@
       "Bash(find:*)",
       "Bash(xargs grep:*)",
       "Bash(grep -E \"\\\\.py$\")",
-      "Bash(xargs ls:*)"
+      "Bash(xargs ls:*)",
+      "Bash(pkill -9 -f \"uvicorn src.main\")",
+      "Bash(alembic current:*)",
+      "Bash(awk '{print $2}')"
     ]
   },
   "enableAllProjectMcpServers": true,

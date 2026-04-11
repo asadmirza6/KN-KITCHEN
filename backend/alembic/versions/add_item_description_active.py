@@ -1,7 +1,7 @@
 """Add description and is_active columns to items table
 
 Revision ID: add_item_description_active
-Revises:
+Revises: add_menu_item_id_to_orders
 Create Date: 2026-04-10 05:42:51.476000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'add_item_description_active'
-down_revision = None
+down_revision = 'add_menu_item_id_to_orders'
 branch_labels = None
 depends_on = None
 

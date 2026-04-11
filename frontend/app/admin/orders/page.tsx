@@ -38,6 +38,10 @@ interface Order {
   notes: string | null
   status: string
   created_at: string
+  calculated_profit?: string
+  profit_margin?: string
+  total_cost?: string
+  status_change_info?: any
 }
 
 interface OrderFormData {
@@ -297,6 +301,16 @@ export default function AdminOrdersPage() {
       mutateOrders()
     } catch (err: any) {
       setFormError('Failed to cancel')
+    }
+  }
+
+  const handleChangeStatus = async (id: number, newStatus: string) => {
+    try {
+      const res = await axios.put(`/orders/${id}/status`, { status: newStatus })
+      setSuccess(`Order status changed to ${newStatus}`)
+      mutateOrders()
+    } catch (err: any) {
+      setFormError(err.response?.data?.detail || 'Failed to change status')
     }
   }
 
@@ -585,7 +599,7 @@ export default function AdminOrdersPage() {
                 <td className="p-4 text-black font-bold">{formatCurrency(parseFloat(o.balance))}</td>
                 <td className="p-4 text-black">{new Date(o.created_at).toLocaleDateString()}</td>
                 <td className="p-4">{getStatusBadge(o.status)}</td>
-                <td className="p-4 flex gap-2">
+                <td className="p-4 flex gap-2 flex-wrap">
                    <button onClick={() => {
                      setSelectedOrder(o)
                      setFormData({
@@ -612,6 +626,12 @@ export default function AdminOrdersPage() {
                      setSelectedOrder(o)
                      setShowDetailsModal(true)
                    }} className="text-indigo-600 hover:text-indigo-800 font-bold text-sm">View</button>
+                   {o.status === 'pending' && (
+                     <button onClick={() => handleChangeStatus(o.id, 'Processing')} className="text-orange-600 hover:text-orange-800 font-bold text-sm">Process</button>
+                   )}
+                   {o.status === 'Processing' && (
+                     <button onClick={() => handleChangeStatus(o.id, 'Completed')} className="text-green-600 hover:text-green-800 font-bold text-sm">Complete</button>
+                   )}
                    <button onClick={() => downloadInvoice(o.id)} className="text-green-600 hover:text-green-800 font-bold text-sm">PDF</button>
                    <button onClick={() => handleCancelOrder(o.id)} className="text-red-600 hover:text-red-800 font-bold text-sm">Cancel</button>
                 </td>
@@ -672,13 +692,19 @@ export default function AdminOrdersPage() {
                   notes: o.notes || ''
                 })
                 setShowEditModal(true)
-              }} className="flex-1 bg-blue-600 text-white px-3 py-2 rounded font-bold text-sm hover:bg-blue-700">Edit</button>
+              }} className="flex-1 min-w-[80px] bg-blue-600 text-white px-2 py-2 rounded font-bold text-xs hover:bg-blue-700">Edit</button>
               <button onClick={() => {
                 setSelectedOrder(o)
                 setShowDetailsModal(true)
-              }} className="flex-1 bg-indigo-600 text-white px-3 py-2 rounded font-bold text-sm hover:bg-indigo-700">View</button>
-              <button onClick={() => downloadInvoice(o.id)} className="flex-1 bg-green-600 text-white px-3 py-2 rounded font-bold text-sm hover:bg-green-700">PDF</button>
-              <button onClick={() => handleCancelOrder(o.id)} className="flex-1 bg-red-600 text-white px-3 py-2 rounded font-bold text-sm hover:bg-red-700">Cancel</button>
+              }} className="flex-1 min-w-[80px] bg-indigo-600 text-white px-2 py-2 rounded font-bold text-xs hover:bg-indigo-700">View</button>
+              {o.status === 'pending' && (
+                <button onClick={() => handleChangeStatus(o.id, 'Processing')} className="flex-1 min-w-[80px] bg-orange-600 text-white px-2 py-2 rounded font-bold text-xs hover:bg-orange-700">Process</button>
+              )}
+              {o.status === 'Processing' && (
+                <button onClick={() => handleChangeStatus(o.id, 'Completed')} className="flex-1 min-w-[80px] bg-green-600 text-white px-2 py-2 rounded font-bold text-xs hover:bg-green-700">Complete</button>
+              )}
+              <button onClick={() => downloadInvoice(o.id)} className="flex-1 min-w-[80px] bg-green-600 text-white px-2 py-2 rounded font-bold text-xs hover:bg-green-700">PDF</button>
+              <button onClick={() => handleCancelOrder(o.id)} className="flex-1 min-w-[80px] bg-red-600 text-white px-2 py-2 rounded font-bold text-xs hover:bg-red-700">Cancel</button>
             </div>
           </div>
         ))}

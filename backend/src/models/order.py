@@ -104,6 +104,12 @@ class Order(SQLModel, table=True):
         description="Total ingredient cost for the order"
     )
 
+    menu_item_id: Optional[int] = Field(
+        default=None,
+        nullable=True,
+        description="Reference to menu item for recipe lookup"
+    )
+
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False, index=True)
 
     class Config:
