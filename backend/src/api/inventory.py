@@ -235,19 +235,20 @@ def update_inventory_with_weighted_average(
     Safety Check: Prevents division by zero if stock becomes 0.
     """
     try:
-        old_stock = inventory_item.current_stock
+        old_stock = Decimal(str(inventory_item.current_stock))
         old_price = inventory_item.average_price
+        new_quantity_decimal = Decimal(str(new_quantity))
 
         # Calculate total stock after purchase
-        total_stock = old_stock + new_quantity
+        total_stock = old_stock + new_quantity_decimal
 
         # Update current stock
-        inventory_item.current_stock = total_stock
+        inventory_item.current_stock = float(total_stock)
 
         # Calculate weighted average price (with zero-division safety)
         if total_stock > 0:
-            weighted_sum = (old_stock * old_price) + (new_quantity * new_price)
-            inventory_item.average_price = weighted_sum / Decimal(str(total_stock))
+            weighted_sum = (old_stock * old_price) + (new_quantity_decimal * new_price)
+            inventory_item.average_price = weighted_sum / total_stock
         else:
             # If stock is 0, keep the new price
             inventory_item.average_price = new_price
@@ -255,8 +256,16 @@ def update_inventory_with_weighted_average(
         inventory_item.updated_at = datetime.utcnow()
         session.add(inventory_item)
 
+        print(f"DEBUG: Weighted Average Updated")
+        print(f"  Old Stock: {old_stock}, Old Price: {old_price}")
+        print(f"  New Quantity: {new_quantity_decimal}, New Price: {new_price}")
+        print(f"  Total Stock: {total_stock}, New Avg Price: {inventory_item.average_price}")
+
         return inventory_item
     except Exception as e:
+        print(f"DEBUG: Error in weighted average calculation: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error updating inventory with weighted average: {str(e)}"

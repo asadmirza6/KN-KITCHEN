@@ -12,6 +12,7 @@ import { isAuthenticated, getCurrentUser } from '@/services/authService'
 import type { User } from '@/types/User'
 import axios from '@/lib/axios'
 import { formatCurrency } from '@/lib/currency'
+import ProfitSummary from '@/components/ProfitSummary'
 
 
 interface OrderStats {
@@ -179,6 +180,14 @@ export default function AdminDashboard() {
             <p className="text-yellow-800">Could not load order statistics. Please refresh the page.</p>
           </div>
         ) : null}
+
+        {/* Profit Summary Widget - ADMIN Only */}
+        {user.role === 'ADMIN' && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Profit Analytics</h2>
+            <ProfitSummary />
+          </div>
+        )}
 
         {/* Management Cards Grid */}
         <div className="mb-8">
@@ -436,6 +445,29 @@ export default function AdminDashboard() {
                     className="w-full bg-violet-600 hover:bg-violet-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
                   >
                     View Purchases
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Recipe Builder Card */}
+            {user.role === 'ADMIN' && (
+              <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden border-2 border-green-400">
+                <div className="p-6">
+                  <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-lg mb-4">
+                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Recipe Builder</h3>
+                  <p className="text-gray-600 text-sm mb-4">
+                    Link menu items to ingredients and manage recipes for orders.
+                  </p>
+                  <button
+                    onClick={() => router.push('/admin/recipes')}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                  >
+                    Manage Recipes
                   </button>
                 </div>
               </div>

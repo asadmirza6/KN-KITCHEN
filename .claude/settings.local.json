@@ -54,7 +54,11 @@
       "Bash(PORT=3010 npm run dev)",
       "Bash(ls -la *.md *.bat *.sh)",
       "Bash(ls -1 *.md *.txt *.bat *.sh)",
-      "Bash(grep -E \"\\\\.\\(py|sql\\)$\")"
+      "Bash(grep -E \"\\\\.\\(py|sql\\)$\")",
+      "Bash(find:*)",
+      "Bash(xargs grep:*)",
+      "Bash(grep -E \"\\\\.py$\")",
+      "Bash(xargs ls:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

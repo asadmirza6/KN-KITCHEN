@@ -2,7 +2,7 @@
 
 /**
  * Admin Recipe Builder Page
- * Manage recipes by linking menu items to inventory ingredients.
+ * Manage recipes by linking menu items to multiple inventory ingredients.
  */
 
 import { useState, useEffect } from 'react'
@@ -24,10 +24,15 @@ interface InventoryItem {
   average_price: number
 }
 
-interface RecipeFormData {
-  product_id: number
+interface IngredientRow {
+  id: string
   ingredient_id: number
   quantity_required: number
+}
+
+interface RecipeFormData {
+  product_id: number
+  ingredients: IngredientRow[]
 }
 
 export default function AdminRecipesPage() {
@@ -59,8 +64,7 @@ export default function AdminRecipesPage() {
 
   const [formData, setFormData] = useState<RecipeFormData>({
     product_id: 0,
-    ingredient_id: 0,
-    quantity_required: 0,
+    ingredients: [{ id: '1', ingredient_id: 0, quantity_required: 0 }],
   })
 
   useEffect(() => {
@@ -79,6 +83,49 @@ export default function AdminRecipesPage() {
     setUser(currentUser)
   }, [router])
 
+  // Calculate total cost for all ingredients
+  const calculateTotalCost = (): number => {
+    return formData.ingredients.reduce((total, ingredient) => {
+      const inventoryItem = inventory.find((inv: InventoryItem) => inv.id === ingredient.ingredient_id)
+      if (inventoryItem) {
+        return total + (ingredient.quantity_required * inventoryItem.average_price)
+      }
+      return total
+    }, 0)
+  }
+
+  // Calculate suggested selling price with margin
+  const calculateSuggestedPrice = (margin: number): number => {
+    const cost = calculateTotalCost()
+    return cost > 0 ? cost / (1 - margin / 100) : 0
+  }
+
+  const addIngredientRow = () => {
+    const newId = String(Math.max(...formData.ingredients.map(i => parseInt(i.id)), 0) + 1)
+    setFormData({
+      ...formData,
+      ingredients: [...formData.ingredients, { id: newId, ingredient_id: 0, quantity_required: 0 }]
+    })
+  }
+
+  const removeIngredientRow = (id: string) => {
+    if (formData.ingredients.length > 1) {
+      setFormData({
+        ...formData,
+        ingredients: formData.ingredients.filter(ing => ing.id !== id)
+      })
+    }
+  }
+
+  const updateIngredient = (id: string, field: string, value: any) => {
+    setFormData({
+      ...formData,
+      ingredients: formData.ingredients.map(ing =>
+        ing.id === id ? { ...ing, [field]: value } : ing
+      )
+    })
+  }
+
   const handleCreateRecipe = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError('')
@@ -89,21 +136,29 @@ export default function AdminRecipesPage() {
       if (!formData.product_id) {
         throw new Error('Please select a menu item')
       }
-      if (!formData.ingredient_id) {
-        throw new Error('Please select an ingredient')
-      }
-      if (formData.quantity_required <= 0) {
-        throw new Error('Quantity required must be greater than 0')
+
+      // Validate all ingredients
+      const validIngredients = formData.ingredients.filter(ing => ing.ingredient_id > 0 && ing.quantity_required > 0)
+      if (validIngredients.length === 0) {
+        throw new Error('Please add at least one ingredient with quantity > 0')
       }
 
-      await recipeService.createRecipe({
-        product_id: formData.product_id,
-        ingredient_id: formData.ingredient_id,
-        quantity_required: formData.quantity_required,
+      // Create recipes for each ingredient
+      const createdRecipes = []
+      for (const ingredient of validIngredients) {
+        const recipe = await recipeService.createRecipe({
+          product_id: formData.product_id,
+          ingredient_id: ingredient.ingredient_id,
+          quantity_required: ingredient.quantity_required,
+        })
+        createdRecipes.push(recipe)
+      }
+
+      setSuccess(`Recipe created successfully with ${createdRecipes.length} ingredient(s)!`)
+      setFormData({
+        product_id: 0,
+        ingredients: [{ id: '1', ingredient_id: 0, quantity_required: 0 }],
       })
-
-      setSuccess('Recipe created successfully!')
-      setFormData({ product_id: 0, ingredient_id: 0, quantity_required: 0 })
       setShowForm(false)
       mutateRecipes()
     } catch (err: any) {
@@ -129,9 +184,23 @@ export default function AdminRecipesPage() {
     }
   }
 
+  // Group recipes by product
+  const recipesByProduct = recipes.reduce((acc: any, recipe: Recipe) => {
+    if (!acc[recipe.product_id]) {
+      acc[recipe.product_id] = {
+        product_name: recipe.product_name,
+        ingredients: []
+      }
+    }
+    acc[recipe.product_id].ingredients.push(recipe)
+    return acc
+  }, {})
+
   if (!mounted) {
     return <div className="p-10 text-center text-black font-bold">Loading...</div>
   }
+
+  const totalCost = calculateTotalCost()
 
   return (
     <div className="min-h-screen bg-transparent p-4 md:p-8">
@@ -157,12 +226,12 @@ export default function AdminRecipesPage() {
         {/* Error/Success Messages */}
         {formError && (
           <div className="bg-red-100 text-red-900 p-4 rounded mb-4 font-bold">
-            {formError}
+            {typeof formError === 'string' ? formError : 'An error occurred'}
           </div>
         )}
         {success && (
           <div className="bg-green-100 text-green-900 p-4 rounded mb-4 font-bold">
-            {success}
+            {typeof success === 'string' ? success : 'Operation successful'}
           </div>
         )}
 
@@ -174,62 +243,118 @@ export default function AdminRecipesPage() {
             </h2>
 
             <form onSubmit={handleCreateRecipe} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-bold text-black mb-1">
-                    Menu Item (Product) *
-                  </label>
-                  <select
-                    value={formData.product_id}
-                    onChange={(e) => setFormData({ ...formData, product_id: parseInt(e.target.value) })}
-                    className="border p-2 rounded w-full text-black font-bold"
-                    required
-                  >
-                    <option value={0}>Select Menu Item</option>
-                    {items.map((item: Item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-black mb-1">
-                    Ingredient *
-                  </label>
-                  <select
-                    value={formData.ingredient_id}
-                    onChange={(e) => setFormData({ ...formData, ingredient_id: parseInt(e.target.value) })}
-                    className="border p-2 rounded w-full text-black font-bold"
-                    required
-                  >
-                    <option value={0}>Select Ingredient</option>
-                    {inventory.map((inv: InventoryItem) => (
-                      <option key={inv.id} value={inv.id}>
-                        {inv.item_name} ({inv.unit})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
+              {/* Menu Item Selection */}
               <div>
                 <label className="block text-sm font-bold text-black mb-1">
-                  Quantity Required *
+                  Menu Item (Product) *
                 </label>
-                <input
-                  type="number"
-                  placeholder="e.g., 0.5"
-                  value={formData.quantity_required}
-                  onChange={(e) => setFormData({ ...formData, quantity_required: parseFloat(e.target.value) || 0 })}
+                <select
+                  value={formData.product_id}
+                  onChange={(e) => setFormData({ ...formData, product_id: parseInt(e.target.value) })}
                   className="border p-2 rounded w-full text-black font-bold"
-                  step="0.01"
                   required
-                />
+                >
+                  <option value={0}>Select Menu Item</option>
+                  {items.map((item: Item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="flex gap-2">
+              {/* Ingredients Section */}
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-bold text-black mb-3">Ingredients</h3>
+
+                {formData.ingredients.map((ingredient, index) => (
+                  <div key={ingredient.id} className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3 pb-3 border-b">
+                    {/* Ingredient Dropdown */}
+                    <div>
+                      <label className="block text-xs font-bold text-gray-600 mb-1">
+                        Ingredient {index + 1}
+                      </label>
+                      <select
+                        value={ingredient.ingredient_id}
+                        onChange={(e) => updateIngredient(ingredient.id, 'ingredient_id', parseInt(e.target.value))}
+                        className="border p-2 rounded w-full text-black font-bold text-sm"
+                      >
+                        <option value={0}>Select Ingredient</option>
+                        {inventory.map((inv: InventoryItem) => {
+                          const isLowStock = inv.current_stock < 5
+                          return (
+                            <option key={inv.id} value={inv.id}>
+                              {inv.item_name} ({inv.unit}) {isLowStock ? '⚠️ LOW STOCK' : `Stock: ${inv.current_stock.toFixed(2)}`}
+                            </option>
+                          )
+                        })}
+                      </select>
+                    </div>
+
+                    {/* Quantity Input */}
+                    <div>
+                      <label className="block text-xs font-bold text-gray-600 mb-1">
+                        Quantity Required
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="0.00"
+                        value={ingredient.quantity_required}
+                        onChange={(e) => updateIngredient(ingredient.id, 'quantity_required', parseFloat(e.target.value) || 0)}
+                        className="border p-2 rounded w-full text-black font-bold text-sm"
+                        step="0.01"
+                      />
+                    </div>
+
+                    {/* Delete Button */}
+                    <div className="flex items-end">
+                      <button
+                        type="button"
+                        onClick={() => removeIngredientRow(ingredient.id)}
+                        disabled={formData.ingredients.length === 1}
+                        className="w-full bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white px-3 py-2 rounded font-bold text-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Add Another Ingredient Button */}
+                <button
+                  type="button"
+                  onClick={addIngredientRow}
+                  className="mt-3 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-bold text-sm"
+                >
+                  + Add Another Ingredient
+                </button>
+              </div>
+
+              {/* Cost Summary */}
+              {totalCost > 0 && (
+                <div className="bg-gray-100 p-4 rounded space-y-2">
+                  <p className="text-sm text-gray-600">
+                    <strong>Total Cost per Plate:</strong> <span className="text-black font-bold">Rs. {totalCost.toFixed(2)}</span>
+                  </p>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div>
+                      <p className="text-gray-600">30% Margin</p>
+                      <p className="font-bold text-black">Rs. {calculateSuggestedPrice(30).toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">40% Margin</p>
+                      <p className="font-bold text-black">Rs. {calculateSuggestedPrice(40).toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">50% Margin</p>
+                      <p className="font-bold text-black">Rs. {calculateSuggestedPrice(50).toFixed(2)}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Form Buttons */}
+              <div className="flex gap-2 pt-4">
                 <button
                   type="submit"
                   disabled={submitting}
@@ -241,7 +366,10 @@ export default function AdminRecipesPage() {
                   type="button"
                   onClick={() => {
                     setShowForm(false)
-                    setFormData({ product_id: 0, ingredient_id: 0, quantity_required: 0 })
+                    setFormData({
+                      product_id: 0,
+                      ingredients: [{ id: '1', ingredient_id: 0, quantity_required: 0 }],
+                    })
                     setFormError('')
                   }}
                   className="bg-gray-400 text-white px-4 py-2 rounded font-bold hover:bg-gray-500"
@@ -253,9 +381,9 @@ export default function AdminRecipesPage() {
           </div>
         )}
 
-        {/* Recipes Table */}
+        {/* Recipes Table - Grouped by Product */}
         <div className="bg-white shadow rounded-lg p-4 md:p-6">
-          <h2 className="text-xl font-bold mb-4 text-black">Recipes</h2>
+          <h2 className="text-xl font-bold mb-4 text-black">Recipes by Dish</h2>
 
           {!mounted || recipesLoading ? (
             <div className="p-12 text-center">
@@ -267,36 +395,47 @@ export default function AdminRecipesPage() {
               <p>No recipes found. Click "Add Recipe" to create one.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-semibold text-black">Menu Item</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Ingredient</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Unit</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Quantity Required</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recipes.map((recipe: Recipe) => (
-                    <tr key={recipe.id} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="py-3 px-4 text-black font-bold">{recipe.product_name}</td>
-                      <td className="py-3 px-4 text-gray-600">{recipe.ingredient_name}</td>
-                      <td className="py-3 px-4 text-gray-600">{recipe.ingredient_unit}</td>
-                      <td className="py-3 px-4 text-gray-600">{recipe.quantity_required.toFixed(2)}</td>
-                      <td className="py-3 px-4">
-                        <button
-                          onClick={() => handleDeleteRecipe(recipe.id)}
-                          className="text-red-600 font-bold hover:text-red-800"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="space-y-6">
+              {Object.entries(recipesByProduct).map(([productId, data]: [string, any]) => (
+                <div key={productId} className="border rounded-lg p-4">
+                  <h3 className="text-lg font-bold text-black mb-3">{data.product_name}</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left py-2 px-2 font-semibold text-black">Ingredient</th>
+                          <th className="text-left py-2 px-2 font-semibold text-black">Unit</th>
+                          <th className="text-left py-2 px-2 font-semibold text-black">Qty Required</th>
+                          <th className="text-left py-2 px-2 font-semibold text-black">Avg Price</th>
+                          <th className="text-left py-2 px-2 font-semibold text-black">Cost</th>
+                          <th className="text-left py-2 px-2 font-semibold text-black">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.ingredients.map((recipe: Recipe) => (
+                          <tr key={recipe.id} className="border-b border-gray-200 hover:bg-gray-50">
+                            <td className="py-2 px-2 text-black font-bold">{recipe.ingredient_name}</td>
+                            <td className="py-2 px-2 text-gray-600">{recipe.ingredient_unit}</td>
+                            <td className="py-2 px-2 text-gray-600">{recipe.quantity_required.toFixed(2)}</td>
+                            <td className="py-2 px-2 text-gray-600">Rs. {(inventory.find((i: InventoryItem) => i.id === recipe.ingredient_id)?.average_price || 0).toFixed(2)}</td>
+                            <td className="py-2 px-2 text-gray-600 font-bold">
+                              Rs. {(recipe.quantity_required * (inventory.find((i: InventoryItem) => i.id === recipe.ingredient_id)?.average_price || 0)).toFixed(2)}
+                            </td>
+                            <td className="py-2 px-2">
+                              <button
+                                onClick={() => handleDeleteRecipe(recipe.id)}
+                                className="text-red-600 font-bold hover:text-red-800 text-sm"
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

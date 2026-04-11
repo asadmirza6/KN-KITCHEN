@@ -104,6 +104,14 @@ export default function AdminInventoryPage() {
     }
   }
 
+  // Check if stock is low (threshold: 5 units)
+  const isLowStock = (stock: number): boolean => {
+    return stock < 5
+  }
+
+  // Get low stock items
+  const lowStockItems = inventory.filter((item: InventoryItem) => isLowStock(item.current_stock))
+
   if (!mounted) {
     return <div className="p-10 text-center text-black font-bold">Loading...</div>
   }
@@ -128,6 +136,32 @@ export default function AdminInventoryPage() {
         </div>
 
         <h1 className="text-3xl font-bold mb-6 text-black">Inventory Management</h1>
+
+        {/* Low Stock Alert */}
+        {lowStockItems.length > 0 && (
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-bold text-red-800">Low Stock Alert</h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p className="font-bold mb-2">{lowStockItems.length} item(s) have low stock (less than 5 units):</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    {lowStockItems.map((item: InventoryItem) => (
+                      <li key={item.id}>
+                        <strong>{item.item_name}</strong> - Current: {item.current_stock.toFixed(2)} {item.unit}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Error/Success Messages */}
         {formError && (
@@ -261,9 +295,18 @@ export default function AdminInventoryPage() {
                 </thead>
                 <tbody>
                   {inventory.map((item: InventoryItem) => (
-                    <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="py-3 px-4 text-black font-bold">{item.item_name}</td>
-                      <td className="py-3 px-4 text-gray-600">{item.current_stock.toFixed(2)}</td>
+                    <tr key={item.id} className={`border-b border-gray-200 hover:bg-gray-50 ${isLowStock(item.current_stock) ? 'bg-red-50' : ''}`}>
+                      <td className="py-3 px-4 text-black font-bold">
+                        <div className="flex items-center gap-2">
+                          {item.item_name}
+                          {isLowStock(item.current_stock) && (
+                            <span className="bg-red-500 text-white text-xs px-2 py-1 rounded font-bold">⚠️ LOW</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className={`py-3 px-4 font-bold ${isLowStock(item.current_stock) ? 'text-red-600' : 'text-gray-600'}`}>
+                        {item.current_stock.toFixed(2)}
+                      </td>
                       <td className="py-3 px-4 text-gray-600">{item.unit}</td>
                       <td className="py-3 px-4 text-gray-600">Rs. {item.average_price.toFixed(2)}</td>
                       <td className="py-3 px-4 text-gray-600 font-bold">

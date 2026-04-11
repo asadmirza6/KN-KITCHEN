@@ -117,21 +117,37 @@ export default function AdminPurchaseRecordsPage() {
         throw new Error('Rate must be greater than 0')
       }
 
-      const formDataToSend = new FormData()
-      formDataToSend.append('vendor_id', formData.vendor_id.toString())
-      formDataToSend.append('inventory_item_id', formData.inventory_item_id.toString())
-      formDataToSend.append('quantity', formData.quantity.toString())
-      formDataToSend.append('rate', formData.rate.toString())
+      // DEBUG: Log form data before sending
+      console.log('DEBUG: Purchase Form Data', {
+        vendor_id: formData.vendor_id,
+        inventory_item_id: formData.inventory_item_id,
+        quantity: formData.quantity,
+        rate: formData.rate,
+      })
 
-      await axios.post('/purchase-records', formDataToSend, {
+      const formDataToSend = new FormData()
+      formDataToSend.append('vendor_id', String(parseInt(String(formData.vendor_id))))
+      formDataToSend.append('inventory_item_id', String(parseInt(String(formData.inventory_item_id))))
+      formDataToSend.append('quantity', String(parseFloat(String(formData.quantity))))
+      formDataToSend.append('rate', String(parseFloat(String(formData.rate))))
+
+      console.log('DEBUG: FormData entries:')
+      formDataToSend.forEach((value, key) => {
+        console.log(`  ${key}: ${value}`)
+      })
+
+      const response = await axios.post('/purchase-records', formDataToSend, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
+
+      console.log('DEBUG: Purchase created successfully', response.data)
 
       setSuccess('Purchase record created successfully! Inventory updated with weighted average pricing.')
       setFormData({ vendor_id: 0, inventory_item_id: 0, quantity: 0, rate: 0 })
       setShowForm(false)
       mutatePurchases()
     } catch (err: any) {
+      console.error('DEBUG: Error creating purchase', err)
       const errorMessage = err.response?.data?.detail || err.message || 'Failed to create purchase record'
       setFormError(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage))
     } finally {
@@ -171,12 +187,12 @@ export default function AdminPurchaseRecordsPage() {
         {/* Error/Success Messages */}
         {formError && (
           <div className="bg-red-100 text-red-900 p-4 rounded mb-4 font-bold">
-            {formError}
+            {typeof formError === 'string' ? formError : (typeof formError === 'object' && formError?.message ? formError.message : 'An error occurred')}
           </div>
         )}
         {success && (
           <div className="bg-green-100 text-green-900 p-4 rounded mb-4 font-bold">
-            {success}
+            {typeof success === 'string' ? success : 'Operation successful'}
           </div>
         )}
 

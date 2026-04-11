@@ -3,7 +3,7 @@ Purchase Record API endpoints for inventory purchases.
 Handles purchase creation with automatic inventory and weighted average price updates.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Form
 from sqlmodel import Session, select
 from typing import List
 from decimal import Decimal
@@ -98,10 +98,10 @@ def get_purchase_record(
 
 @router.post("/", dependencies=[Depends(verify_jwt), Depends(require_admin)])
 def create_purchase_record(
-    vendor_id: int,
-    inventory_item_id: int,
-    quantity: float,
-    rate: Decimal,
+    vendor_id: int = Form(...),
+    inventory_item_id: int = Form(...),
+    quantity: float = Form(...),
+    rate: str = Form(...),
     session: Session = Depends(get_session)
 ):
     """
@@ -122,6 +122,22 @@ def create_purchase_record(
         rate: Rate per unit
     """
     try:
+        # DEBUG: Log incoming request
+        print(f"DEBUG: Purchase Record Request")
+        print(f"  vendor_id: {vendor_id} (type: {type(vendor_id).__name__})")
+        print(f"  inventory_item_id: {inventory_item_id} (type: {type(inventory_item_id).__name__})")
+        print(f"  quantity: {quantity} (type: {type(quantity).__name__})")
+        print(f"  rate: {rate} (type: {type(rate).__name__})")
+
+        # Convert rate to Decimal
+        try:
+            rate_decimal = Decimal(str(rate))
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid rate format: {str(e)}"
+            )
+
         # Validate vendor exists
         vendor = session.get(Vendor, vendor_id)
         if not vendor:
@@ -145,29 +161,36 @@ def create_purchase_record(
                 detail="Quantity must be greater than 0"
             )
 
-        if rate <= 0:
+        if rate_decimal <= 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Rate must be greater than 0"
             )
 
         # Calculate total amount
-        total_amount = Decimal(str(quantity)) * rate
+        total_amount = Decimal(str(quantity)) * rate_decimal
+
+        print(f"DEBUG: Validation passed. Updating inventory...")
+        print(f"  Old stock: {inventory_item.current_stock}")
+        print(f"  Old avg price: {inventory_item.average_price}")
 
         # CRITICAL: Update inventory with weighted average costing
         update_inventory_with_weighted_average(
             inventory_item=inventory_item,
             new_quantity=quantity,
-            new_price=rate,
+            new_price=rate_decimal,
             session=session
         )
+
+        print(f"  New stock: {inventory_item.current_stock}")
+        print(f"  New avg price: {inventory_item.average_price}")
 
         # Create purchase record
         new_record = PurchaseRecord(
             vendor_id=vendor_id,
             inventory_item_id=inventory_item_id,
             quantity=quantity,
-            rate=rate,
+            rate=rate_decimal,
             total_amount=total_amount,
             date=datetime.utcnow()
         )
@@ -175,6 +198,8 @@ def create_purchase_record(
         session.add(new_record)
         session.commit()
         session.refresh(new_record)
+
+        print(f"DEBUG: Purchase record created successfully. ID: {new_record.id}")
 
         return {
             "id": new_record.id,
@@ -195,6 +220,9 @@ def create_purchase_record(
         raise
     except Exception as e:
         session.rollback()
+        print(f"DEBUG: Error creating purchase record: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error creating purchase record: {str(e)}"

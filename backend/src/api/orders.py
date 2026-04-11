@@ -145,12 +145,15 @@ def calculate_profit_for_order(order: Order, session: Session) -> dict:
     Calculate profit when order is completed.
 
     For each item in the order:
-    - Profit = (Sale Price * Quantity) - (Quantity * Average_Price from Inventory)
+    - Revenue = Sale Price * Quantity
+    - Cost = Sum of (Quantity * Recipe Qty * Ingredient Avg Price)
+    - Profit = Revenue - Cost
 
     Returns: dict with profit details
     """
     try:
-        total_profit = Decimal("0.00")
+        total_revenue = Decimal("0.00")
+        total_cost = Decimal("0.00")
         profit_details = []
 
         for item in order.items:
@@ -166,36 +169,52 @@ def calculate_profit_for_order(order: Order, session: Session) -> dict:
                 select(Recipe).where(Recipe.product_id == item_id)
             ).all()
 
-            cost = Decimal("0.00")
+            item_cost = Decimal("0.00")
 
             # Calculate total cost based on ingredients
             for recipe in recipes:
                 ingredient = session.get(Inventory, recipe.ingredient_id)
                 if ingredient:
                     ingredient_cost = quantity * Decimal(str(recipe.quantity_required)) * ingredient.average_price
-                    cost += ingredient_cost
+                    item_cost += ingredient_cost
 
-            # Calculate profit for this item
-            revenue = quantity * sale_price
-            profit = revenue - cost
-            total_profit += profit
+            # Calculate revenue and profit for this item
+            item_revenue = quantity * sale_price
+            item_profit = item_revenue - item_cost
+
+            total_revenue += item_revenue
+            total_cost += item_cost
 
             profit_details.append({
                 "item_id": item_id,
                 "item_name": item.get('item_name'),
                 "quantity": float(quantity),
                 "sale_price": float(sale_price),
-                "revenue": float(revenue),
-                "cost": float(cost),
-                "profit": float(profit)
+                "revenue": float(item_revenue),
+                "cost": float(item_cost),
+                "profit": float(item_profit)
             })
+
+        # Calculate net profit (revenue - cost)
+        net_profit = total_revenue - total_cost
+
+        print(f"DEBUG: Profit Calculation for Order {order.id}")
+        print(f"  Total Revenue: {total_revenue}")
+        print(f"  Total Cost: {total_cost}")
+        print(f"  Net Profit: {net_profit}")
 
         return {
             "success": True,
-            "total_profit": float(total_profit),
+            "total_revenue": float(total_revenue),
+            "total_cost": float(total_cost),
+            "net_profit": float(net_profit),
+            "profit_margin": float((net_profit / total_revenue * 100) if total_revenue > 0 else 0),
             "profit_details": profit_details
         }
     except Exception as e:
+        print(f"DEBUG: Error calculating profit: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return {
             "success": False,
             "error": f"Error calculating profit: {str(e)}"
@@ -449,6 +468,95 @@ def get_order_stats(
         "pending_count": pending_count,
         "partial_count": partial_count,
         "paid_count": paid_count
+    }
+
+
+@router.get("/profit/summary", dependencies=[Depends(require_admin)])
+def get_profit_summary(
+    current_user: User = Depends(require_admin),
+    session: Session = Depends(get_session)
+):
+    """
+    Get profit summary for dashboard (admin only).
+    Returns today's profit, weekly profit, and profit breakdown by dish.
+    """
+    from sqlalchemy import func
+    from datetime import date, timedelta
+
+    # Get all completed orders
+    completed_orders = session.exec(
+        select(Order).where(Order.status == "completed")
+    ).all()
+
+    # Today's completed orders
+    today = date.today()
+    today_orders = [
+        order for order in completed_orders
+        if order.created_at.date() == today
+    ]
+
+    # This week's completed orders
+    week_start = today - timedelta(days=today.weekday())
+    week_orders = [
+        order for order in completed_orders
+        if order.created_at.date() >= week_start
+    ]
+
+    # Calculate profit for orders
+    def calculate_order_profit(order: Order) -> dict:
+        profit_result = calculate_profit_for_order(order, session)
+        if profit_result.get("success"):
+            return {
+                "order_id": order.id,
+                "revenue": profit_result.get("total_revenue", 0),
+                "cost": profit_result.get("total_cost", 0),
+                "profit": profit_result.get("net_profit", 0),
+                "margin": profit_result.get("profit_margin", 0)
+            }
+        return {
+            "order_id": order.id,
+            "revenue": float(order.total_amount),
+            "cost": 0,
+            "profit": 0,
+            "margin": 0
+        }
+
+    # Calculate totals
+    today_profit_data = [calculate_order_profit(o) for o in today_orders]
+    week_profit_data = [calculate_order_profit(o) for o in week_orders]
+
+    today_revenue = sum(p["revenue"] for p in today_profit_data)
+    today_cost = sum(p["cost"] for p in today_profit_data)
+    today_profit = sum(p["profit"] for p in today_profit_data)
+
+    week_revenue = sum(p["revenue"] for p in week_profit_data)
+    week_cost = sum(p["cost"] for p in week_profit_data)
+    week_profit = sum(p["profit"] for p in week_profit_data)
+
+    total_revenue = sum(float(o.total_amount) for o in completed_orders)
+    total_profit_all = sum(calculate_order_profit(o)["profit"] for o in completed_orders)
+
+    return {
+        "today": {
+            "orders_count": len(today_orders),
+            "revenue": round(today_revenue, 2),
+            "cost": round(today_cost, 2),
+            "profit": round(today_profit, 2),
+            "margin": round((today_profit / today_revenue * 100) if today_revenue > 0 else 0, 2)
+        },
+        "this_week": {
+            "orders_count": len(week_orders),
+            "revenue": round(week_revenue, 2),
+            "cost": round(week_cost, 2),
+            "profit": round(week_profit, 2),
+            "margin": round((week_profit / week_revenue * 100) if week_revenue > 0 else 0, 2)
+        },
+        "all_time": {
+            "orders_count": len(completed_orders),
+            "revenue": round(total_revenue, 2),
+            "profit": round(total_profit_all, 2),
+            "avg_profit_per_order": round(total_profit_all / len(completed_orders), 2) if completed_orders else 0
+        }
     }
 
 
