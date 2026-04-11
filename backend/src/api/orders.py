@@ -22,7 +22,7 @@ from reportlab.pdfgen import canvas
 import os
 
 from ..database import get_session
-from ..models import Order, User
+from ..models import Order, User, Recipe, Inventory
 from ..middleware.auth import verify_jwt, require_admin, require_staff_or_admin
 
 
@@ -59,6 +59,147 @@ class WatermarkedDocTemplate(SimpleDocTemplate):
 
 
 router = APIRouter()
+
+
+def deduct_inventory_for_order(order: Order, session: Session) -> dict:
+    """
+    Deduct inventory when order status changes to "Processing".
+
+    For each item in the order:
+    1. Look up Recipe for that item (product_id)
+    2. For each ingredient in the recipe, subtract (quantity * recipe.quantity_required) from inventory
+    3. Prevent negative stock with validation
+
+    Returns: dict with deduction details or error
+    """
+    try:
+        deduction_details = []
+
+        # Process each item in the order
+        for item in order.items:
+            item_id = item.get('item_id')
+            quantity_ordered = item.get('quantity_kg', 0)
+
+            if not item_id or quantity_ordered <= 0:
+                continue
+
+            # Get recipes for this product
+            recipes = session.exec(
+                select(Recipe).where(Recipe.product_id == item_id)
+            ).all()
+
+            if not recipes:
+                # No recipe found - skip this item
+                deduction_details.append({
+                    "item_id": item_id,
+                    "item_name": item.get('item_name'),
+                    "status": "skipped",
+                    "reason": "No recipe found"
+                })
+                continue
+
+            # Deduct each ingredient
+            for recipe in recipes:
+                ingredient = session.get(Inventory, recipe.ingredient_id)
+                if not ingredient:
+                    continue
+
+                # Calculate quantity to deduct
+                quantity_to_deduct = quantity_ordered * recipe.quantity_required
+
+                # Check if sufficient stock exists
+                if ingredient.current_stock < quantity_to_deduct:
+                    return {
+                        "success": False,
+                        "error": f"Insufficient stock for {ingredient.item_name}. Required: {quantity_to_deduct}, Available: {ingredient.current_stock}"
+                    }
+
+                # Deduct from inventory
+                ingredient.current_stock -= quantity_to_deduct
+                ingredient.updated_at = datetime.utcnow()
+                session.add(ingredient)
+
+                deduction_details.append({
+                    "ingredient_id": recipe.ingredient_id,
+                    "ingredient_name": ingredient.item_name,
+                    "quantity_deducted": quantity_to_deduct,
+                    "remaining_stock": ingredient.current_stock
+                })
+
+        session.commit()
+
+        return {
+            "success": True,
+            "deductions": deduction_details
+        }
+    except Exception as e:
+        session.rollback()
+        return {
+            "success": False,
+            "error": f"Error deducting inventory: {str(e)}"
+        }
+
+
+def calculate_profit_for_order(order: Order, session: Session) -> dict:
+    """
+    Calculate profit when order is completed.
+
+    For each item in the order:
+    - Profit = (Sale Price * Quantity) - (Quantity * Average_Price from Inventory)
+
+    Returns: dict with profit details
+    """
+    try:
+        total_profit = Decimal("0.00")
+        profit_details = []
+
+        for item in order.items:
+            item_id = item.get('item_id')
+            quantity = Decimal(str(item.get('quantity_kg', 0)))
+            sale_price = Decimal(str(item.get('price_per_kg', 0)))
+
+            if not item_id or quantity <= 0:
+                continue
+
+            # Get recipes for this product to calculate cost
+            recipes = session.exec(
+                select(Recipe).where(Recipe.product_id == item_id)
+            ).all()
+
+            cost = Decimal("0.00")
+
+            # Calculate total cost based on ingredients
+            for recipe in recipes:
+                ingredient = session.get(Inventory, recipe.ingredient_id)
+                if ingredient:
+                    ingredient_cost = quantity * Decimal(str(recipe.quantity_required)) * ingredient.average_price
+                    cost += ingredient_cost
+
+            # Calculate profit for this item
+            revenue = quantity * sale_price
+            profit = revenue - cost
+            total_profit += profit
+
+            profit_details.append({
+                "item_id": item_id,
+                "item_name": item.get('item_name'),
+                "quantity": float(quantity),
+                "sale_price": float(sale_price),
+                "revenue": float(revenue),
+                "cost": float(cost),
+                "profit": float(profit)
+            })
+
+        return {
+            "success": True,
+            "total_profit": float(total_profit),
+            "profit_details": profit_details
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Error calculating profit: {str(e)}"
+        }
 
 
 class OrderItemRequest(BaseModel):
@@ -355,6 +496,9 @@ def update_order(
 ):
     """
     Update an existing order (admin only).
+
+    CRITICAL: When status changes to "Processing", automatically deduct inventory based on recipes.
+    When status changes to "Completed", calculate profit.
     """
     order = session.get(Order, order_id)
 
@@ -363,6 +507,9 @@ def update_order(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Order not found"
         )
+
+    old_status = order.status
+    new_status = request.status if request.status is not None else old_status
 
     # Update fields if provided
     if request.customer_name is not None:
@@ -426,11 +573,31 @@ def update_order(
         else:
             order.status = "pending"
 
+    # CRITICAL: Handle status transitions
+    status_change_info = {}
+
+    # When status changes to "Processing", deduct inventory
+    if old_status != "Processing" and order.status == "Processing":
+        deduction_result = deduct_inventory_for_order(order, session)
+        if not deduction_result.get("success"):
+            session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=deduction_result.get("error", "Failed to deduct inventory")
+            )
+        status_change_info["inventory_deduction"] = deduction_result
+
+    # When status changes to "Completed", calculate profit
+    if old_status != "Completed" and order.status == "Completed":
+        profit_result = calculate_profit_for_order(order, session)
+        if profit_result.get("success"):
+            status_change_info["profit_calculation"] = profit_result
+
     session.add(order)
     session.commit()
     session.refresh(order)
 
-    return {
+    response = {
         "id": order.id,
         "customer_name": order.customer_name,
         "customer_email": order.customer_email,
@@ -446,6 +613,11 @@ def update_order(
         "status": order.status,
         "created_at": order.created_at.isoformat()
     }
+
+    if status_change_info:
+        response["status_change_info"] = status_change_info
+
+    return response
 
 
 @router.post("/{order_id}/update-payment", dependencies=[Depends(require_admin)])

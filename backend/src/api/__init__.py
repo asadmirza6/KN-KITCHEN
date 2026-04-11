@@ -11,6 +11,7 @@ from . import users
 from . import inventory
 from . import vendors
 from . import purchase_records
+from . import recipes
 from . import staff
 from . import staff_transactions
 
@@ -26,6 +27,7 @@ __all__ = [
     "inventory",
     "vendors",
     "purchase_records",
+    "recipes",
     "staff",
     "staff_transactions",
 ]

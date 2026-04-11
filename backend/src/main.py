@@ -128,7 +128,7 @@ def root():
 
 
 # Import and mount routers
-from .api import auth, items, media, orders, quotations, packages, users, albums, inventory, vendors, purchase_records, staff, staff_transactions
+from .api import auth, items, media, orders, quotations, packages, users, albums, inventory, vendors, purchase_records, staff, staff_transactions, recipes
 
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(items.router, prefix="/items", tags=["Items"])
@@ -143,5 +143,6 @@ app.include_router(users.router, prefix="/users", tags=["Users"])
 app.include_router(inventory.router, prefix="/inventory", tags=["ERP - Inventory"])
 app.include_router(vendors.router, prefix="/vendors", tags=["ERP - Vendors"])
 app.include_router(purchase_records.router, prefix="/purchase-records", tags=["ERP - Purchase Records"])
+app.include_router(recipes.router, prefix="/recipes", tags=["ERP - Recipes"])
 app.include_router(staff.router, prefix="/staff", tags=["ERP - Staff"])
 app.include_router(staff_transactions.router, prefix="/staff-transactions", tags=["ERP - Staff Transactions"])
