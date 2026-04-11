@@ -485,7 +485,7 @@ def get_profit_summary(
 
     # Get all completed orders
     completed_orders = session.exec(
-        select(Order).where(Order.status == "completed")
+        select(Order).where(Order.status == "Completed")
     ).all()
 
     # Today's completed orders

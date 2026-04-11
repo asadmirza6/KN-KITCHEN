@@ -60,7 +60,13 @@ export default function ProfitSummary() {
   }
 
   if (!profitData) {
-    return null
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <p className="text-gray-500 text-center">No profit data available yet</p>
+        </div>
+      </div>
+    )
   }
 
   const formatCurrency = (value: number) => {
