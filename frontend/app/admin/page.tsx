@@ -1,86 +1,36 @@
 'use client'
 
 /**
- * Admin Dashboard - Protected Route with Real-Time Statistics
- * Shows admin management options and live order statistics.
+ * Admin Dashboard - Main Layout with Sidebar
+ * Redirects to admin home with sidebar navigation
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import useSWR from 'swr'
 import { isAuthenticated, getCurrentUser } from '@/services/authService'
-import type { User } from '@/types/User'
-import axios from '@/lib/axios'
-import { formatCurrency } from '@/lib/currency'
-import ProfitSummary from '@/components/ProfitSummary'
-
-
-interface OrderStats {
-  total_orders: number
-  today_orders: number
-  total_revenue: number
-  today_revenue: number
-  total_advances: number
-  today_advances: number
-  total_pending: number
-  today_pending: number
-  pending_count: number
-  partial_count: number
-  paid_count: number
-}
-
-interface SystemStatus {
-  db_status: 'connected' | 'disconnected'
-  today_orders: number
-  server_uptime: string
-  active_sessions: number
-}
-
 
 export default function AdminDashboard() {
   const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
-  const [sessionStartTime] = useState(new Date())
-
-  // SWR hook for order statistics
-  const { data: stats, error: statsError, isLoading: statsLoading } = useSWR(
-    isAuthenticated() && getCurrentUser()?.role === 'ADMIN' ? '/orders/stats/summary' : null,
-    undefined,
-    { revalidateOnFocus: false }
-  )
 
   useEffect(() => {
-    // Check authentication
     if (!isAuthenticated()) {
       router.push('/login')
       return
     }
 
     const currentUser = getCurrentUser()
-    setUser(currentUser)
+    if (currentUser?.role !== 'ADMIN') {
+      router.push('/')
+      return
+    }
+
+    // Redirect to home page
+    router.push('/admin/home')
   }, [router])
 
-  const formatUptime = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-    const secs = seconds % 60
-    return `${hours}h ${minutes}m ${secs}s`
-  }
+  return null
+}
 
-  const systemStatus = {
-    db_status: statsError ? 'disconnected' : 'connected' as const,
-    today_orders: stats?.today_orders || 0,
-    server_uptime: formatUptime(Math.floor((new Date().getTime() - sessionStartTime.getTime()) / 1000)),
-    active_sessions: 1
-  }
-
-  if (!user) {
-    return null
-  }
-
-  return (
-    <div className="min-h-screen bg-transparent py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
