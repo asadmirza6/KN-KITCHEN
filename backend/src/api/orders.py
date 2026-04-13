@@ -1140,5 +1140,140 @@ def download_invoice(
     )
 
 
+@router.get("/analytics/monthly", dependencies=[Depends(require_admin)])
+def get_monthly_analytics(month: int, year: int, session: Session = Depends(get_session)):
+    """
+    Get monthly profit and cost analytics.
+
+    Query Parameters:
+    - month: Month number (1-12)
+    - year: Year (e.g., 2026)
+
+    Returns:
+    - total_revenue: Sum of total_amount for all completed orders in the month
+    - total_cost: Sum of total_cost for all completed orders in the month
+    - net_profit: total_revenue - total_cost
+    - avg_margin: Average profit margin percentage
+    - order_count: Number of completed orders in the month
+    """
+    try:
+        from datetime import datetime, timedelta
+
+        # Validate month and year
+        if month < 1 or month > 12:
+            raise HTTPException(status_code=400, detail="Month must be between 1 and 12")
+        if year < 2000 or year > 2100:
+            raise HTTPException(status_code=400, detail="Invalid year")
+
+        # Get first and last day of the month
+        start_date = datetime(year, month, 1)
+        if month == 12:
+            end_date = datetime(year + 1, 1, 1) - timedelta(seconds=1)
+        else:
+            end_date = datetime(year, month + 1, 1) - timedelta(seconds=1)
+
+        # Fetch all completed orders for the month
+        orders = session.exec(
+            select(Order).where(
+                (Order.status == "Completed") &
+                (Order.created_at >= start_date) &
+                (Order.created_at <= end_date)
+            )
+        ).all()
+
+        # Calculate totals
+        total_revenue = sum(float(order.total_amount) for order in orders)
+        total_cost = sum(float(order.total_cost) for order in orders)
+        net_profit = total_revenue - total_cost
+
+        # Calculate average margin
+        avg_margin = 0.0
+        if orders:
+            avg_margin = sum(float(order.profit_margin) for order in orders) / len(orders)
+
+        return {
+            "month": month,
+            "year": year,
+            "total_revenue": round(total_revenue, 2),
+            "total_cost": round(total_cost, 2),
+            "net_profit": round(net_profit, 2),
+            "avg_margin": round(avg_margin, 2),
+            "order_count": len(orders)
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching analytics: {str(e)}")
 
 
+@router.get("/analytics/history", dependencies=[Depends(require_admin)])
+def get_analytics_history(month: int = None, year: int = None, session: Session = Depends(get_session)):
+    """
+    Get detailed history of all completed orders with profit breakdown.
+
+    Query Parameters (optional):
+    - month: Month number (1-12) - if provided, filters by month
+    - year: Year (e.g., 2026) - if provided, filters by year
+
+    Returns:
+    - List of completed orders with: customer_name, order_date, items_summary, total_amount, total_cost, calculated_profit, profit_margin
+    """
+    try:
+        from datetime import datetime
+
+        # Build query
+        query = select(Order).where(Order.status == "Completed")
+
+        # Apply month/year filters if provided
+        if month is not None and year is not None:
+            if month < 1 or month > 12:
+                raise HTTPException(status_code=400, detail="Month must be between 1 and 12")
+
+            start_date = datetime(year, month, 1)
+            if month == 12:
+                end_date = datetime(year + 1, 1, 1)
+            else:
+                end_date = datetime(year, month + 1, 1)
+
+            query = query.where(
+                (Order.created_at >= start_date) &
+                (Order.created_at < end_date)
+            )
+
+        # Order by created_at descending (newest first)
+        query = query.order_by(Order.created_at.desc())
+
+        orders = session.exec(query).all()
+
+        # Format response
+        history = []
+        for order in orders:
+            # Build items summary
+            items_summary = []
+            for item in order.items:
+                items_summary.append(f"{item.get('item_name', 'Unknown')} ({item.get('quantity_kg', 0)}kg)")
+
+            for item in order.manual_items:
+                items_summary.append(f"{item.get('name', 'Unknown')} ({item.get('quantity_kg', 0)}kg)")
+
+            history.append({
+                "order_id": order.id,
+                "customer_name": order.customer_name,
+                "order_date": order.created_at.isoformat(),
+                "items_summary": ", ".join(items_summary) if items_summary else "No items",
+                "total_amount": float(order.total_amount),
+                "total_cost": float(order.total_cost),
+                "calculated_profit": float(order.calculated_profit),
+                "profit_margin": float(order.profit_margin)
+            })
+
+        return {
+            "total_orders": len(history),
+            "orders": history
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching history: {str(e)}")

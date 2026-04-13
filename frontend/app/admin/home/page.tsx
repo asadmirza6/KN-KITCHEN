@@ -13,7 +13,6 @@ import type { User } from '@/types/User'
 import { formatCurrency } from '@/lib/currency'
 import { swrFetcher, swrConfig } from '@/lib/swr'
 import Breadcrumb from '@/components/Breadcrumb'
-import ProfitSummary from '@/components/ProfitSummary'
 
 interface OrderStats {
   total_orders: number
@@ -23,6 +22,17 @@ interface OrderStats {
   pending_count: number
   partial_count: number
   paid_count: number
+}
+
+interface OrderAnalytics {
+  total_orders: number
+  today_orders: number
+  total_revenue: number
+  today_revenue: number
+  pending_count: number
+  partial_count: number
+  paid_count: number
+  avg_order_value: number
 }
 
 export default function AdminHome() {
@@ -65,37 +75,39 @@ export default function AdminHome() {
           <p className="mt-1 sm:mt-2 text-xs sm:text-sm md:text-base text-gray-600">Welcome back, {user.name}! Manage your catering business.</p>
         </div>
 
-        {/* Profit Summary */}
+        {/* Order Analytics */}
         <div className="mb-4 sm:mb-6 md:mb-8">
-          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-gray-900 mb-2 sm:mb-3 md:mb-4">Profit Analytics</h2>
-          <ProfitSummary />
+          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-gray-900 mb-2 sm:mb-3 md:mb-4">Order Analytics</h2>
+          {stats && !statsLoading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+              <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
+                <p className="text-gray-600 text-xs sm:text-sm">Total Orders</p>
+                <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mt-2">{stats.total_orders}</p>
+                <p className="text-xs text-gray-500 mt-2">{formatCurrency(stats.total_revenue)}</p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
+                <p className="text-gray-600 text-xs sm:text-sm">Today's Orders</p>
+                <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-600 mt-2">{stats.today_orders}</p>
+                <p className="text-xs text-gray-500 mt-2">{formatCurrency(stats.today_revenue)}</p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
+                <p className="text-gray-600 text-xs sm:text-sm">Fully Paid</p>
+                <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-green-600 mt-2">{stats.paid_count}</p>
+                <p className="text-xs text-gray-500 mt-2">Completed</p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
+                <p className="text-gray-600 text-xs sm:text-sm">Awaiting Payment</p>
+                <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-yellow-600 mt-2">{stats.pending_count + stats.partial_count}</p>
+                <p className="text-xs text-gray-500 mt-2">Pending + Partial</p>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow p-6 text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+              <p className="mt-2 text-gray-600">Loading analytics...</p>
+            </div>
+          )}
         </div>
-
-        {/* Quick Stats */}
-        {stats && !statsLoading && (
-          <div className="mb-4 sm:mb-6 md:mb-8 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
-            <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
-              <p className="text-gray-600 text-xs sm:text-xs md:text-sm">Today's Orders</p>
-              <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mt-1 sm:mt-2">{stats.today_orders}</p>
-              <p className="text-xs text-gray-500 mt-1 sm:mt-2">{formatCurrency(stats.today_revenue)}</p>
-            </div>
-            <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
-              <p className="text-gray-600 text-xs sm:text-xs md:text-sm">Total Orders</p>
-              <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mt-1 sm:mt-2">{stats.total_orders}</p>
-              <p className="text-xs text-gray-500 mt-1 sm:mt-2">{formatCurrency(stats.total_revenue)}</p>
-            </div>
-            <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
-              <p className="text-gray-600 text-xs sm:text-xs md:text-sm">Fully Paid</p>
-              <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-green-600 mt-1 sm:mt-2">{stats.paid_count}</p>
-              <p className="text-xs text-gray-500 mt-1 sm:mt-2">Completed orders</p>
-            </div>
-            <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
-              <p className="text-gray-600 text-xs sm:text-xs md:text-sm">Awaiting Payment</p>
-              <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-yellow-600 mt-1 sm:mt-2">{stats.pending_count + stats.partial_count}</p>
-              <p className="text-xs text-gray-500 mt-1 sm:mt-2">Pending + Partial</p>
-            </div>
-          </div>
-        )}
 
         {/* Main Sections */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8">

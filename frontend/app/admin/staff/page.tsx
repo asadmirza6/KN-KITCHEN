@@ -11,6 +11,7 @@ import useSWR from 'swr'
 import { isAuthenticated, getCurrentUser } from '@/services/authService'
 import axios from '@/lib/axios'
 import { swrFetcher, swrConfig } from '@/lib/swr'
+import { formatNumber } from '@/lib/currency'
 import type { User } from '@/types/User'
 
 interface StaffMember {
@@ -303,7 +304,7 @@ export default function AdminStaffPage() {
                   <option value={0}>Select Staff Member</option>
                   {staff.map((member: StaffMember) => (
                     <option key={member.id} value={member.id}>
-                      {member.name} - Rs. {member.monthly_salary.toFixed(2)}/month (Remaining: Rs. {member.remaining_salary.toFixed(2)})
+                      {member.name} - Rs. {formatNumber(member.monthly_salary)}/month (Remaining: Rs. {formatNumber(member.remaining_salary)})
                     </option>
                   ))}
                 </select>
@@ -398,9 +399,9 @@ export default function AdminStaffPage() {
                       <tr key={member.id} className="border-b border-gray-200 hover:bg-gray-50">
                         <td className="py-3 px-3 sm:px-4 text-black font-bold text-sm">{member.name}</td>
                         <td className="py-3 px-3 sm:px-4 text-gray-600 text-sm">{member.role}</td>
-                        <td className="py-3 px-3 sm:px-4 text-gray-600 text-sm">Rs. {member.monthly_salary.toFixed(2)}</td>
-                        <td className="py-3 px-3 sm:px-4 text-gray-600 text-sm">Rs. {member.total_advances.toFixed(2)}</td>
-                        <td className="py-3 px-3 sm:px-4 font-bold text-green-600 text-sm">Rs. {member.remaining_salary.toFixed(2)}</td>
+                        <td className="py-3 px-3 sm:px-4 text-gray-600 text-sm">Rs. {formatNumber(member.monthly_salary)}</td>
+                        <td className="py-3 px-3 sm:px-4 text-gray-600 text-sm">Rs. {formatNumber(member.total_advances)}</td>
+                        <td className="py-3 px-3 sm:px-4 font-bold text-green-600 text-sm">Rs. {formatNumber(member.remaining_salary)}</td>
                         <td className="py-3 px-3 sm:px-4">
                           <span className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-bold ${
                             member.remaining_salary > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
@@ -425,15 +426,15 @@ export default function AdminStaffPage() {
                     <div className="grid grid-cols-2 gap-2 sm:gap-3 bg-gray-50 p-2 sm:p-3 rounded mb-2 sm:mb-3">
                       <div>
                         <p className="text-xs text-gray-700 font-bold">Monthly Salary</p>
-                        <p className="text-black font-bold text-sm">Rs. {member.monthly_salary.toFixed(2)}</p>
+                        <p className="text-black font-bold text-sm">Rs. {formatNumber(member.monthly_salary)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-700 font-bold">Total Advances</p>
-                        <p className="text-black font-bold text-sm">Rs. {member.total_advances.toFixed(2)}</p>
+                        <p className="text-black font-bold text-sm">Rs. {formatNumber(member.total_advances)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-700 font-bold">Remaining Salary</p>
-                        <p className="text-green-600 font-bold text-sm">Rs. {member.remaining_salary.toFixed(2)}</p>
+                        <p className="text-green-600 font-bold text-sm">Rs. {formatNumber(member.remaining_salary)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-700 font-bold">Status</p>

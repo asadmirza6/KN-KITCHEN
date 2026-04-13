@@ -5,14 +5,14 @@
 /**
  * Format amount in Pakistan Rupees (PKR)
  * @param amount - The amount to format
- * @param showDecimals - Whether to show decimal places (default: true)
- * @returns Formatted currency string (e.g., "Rs 1,200.00" or "Rs 15,000")
+ * @param showDecimals - Whether to show decimal places (default: false)
+ * @returns Formatted currency string (e.g., "Rs 1,200" or "Rs 15,000")
  */
-export function formatCurrency(amount: number | string, showDecimals: boolean = true): string {
+export function formatCurrency(amount: number | string, showDecimals: boolean = false): string {
   const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount
 
   if (isNaN(numAmount)) {
-    return 'Rs 0.00'
+    return 'Rs 0'
   }
 
   const formatted = new Intl.NumberFormat('en-PK', {
@@ -26,18 +26,18 @@ export function formatCurrency(amount: number | string, showDecimals: boolean = 
 /**
  * Format amount for display without currency symbol
  * @param amount - The amount to format
- * @returns Formatted number string with commas
+ * @returns Formatted number string with commas (no decimals)
  */
 export function formatNumber(amount: number | string): string {
   const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount
 
   if (isNaN(numAmount)) {
-    return '0.00'
+    return '0'
   }
 
   return new Intl.NumberFormat('en-PK', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
   }).format(numAmount)
 }
 

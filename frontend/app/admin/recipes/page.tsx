@@ -11,6 +11,7 @@ import useSWR from 'swr'
 import { isAuthenticated, getCurrentUser } from '@/services/authService'
 import axios from '@/lib/axios'
 import { swrFetcher, swrConfig } from '@/lib/swr'
+import { formatNumber } from '@/lib/currency'
 import { recipeService } from '@/services/recipeService'
 import type { User } from '@/types/User'
 import type { Item } from '@/types/Item'
@@ -284,7 +285,7 @@ export default function AdminRecipesPage() {
                           const isLowStock = inv.current_stock < 5
                           return (
                             <option key={inv.id} value={inv.id}>
-                              {inv.item_name} ({inv.unit}) {isLowStock ? '⚠️ LOW STOCK' : `Stock: ${inv.current_stock.toFixed(2)}`}
+                              {inv.item_name} ({inv.unit}) {isLowStock ? '⚠️ LOW STOCK' : `Stock: ${formatNumber(inv.current_stock)}`}
                             </option>
                           )
                         })}
@@ -334,20 +335,20 @@ export default function AdminRecipesPage() {
               {totalCost > 0 && (
                 <div className="bg-gray-100 p-3 sm:p-4 rounded space-y-2">
                   <p className="text-xs sm:text-sm text-gray-600">
-                    <strong>Total Cost per Plate:</strong> <span className="text-black font-bold">Rs. {totalCost.toFixed(2)}</span>
+                    <strong>Total Cost per Plate:</strong> <span className="text-black font-bold">Rs. {formatNumber(totalCost)}</span>
                   </p>
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <div>
                       <p className="text-gray-600">30% Margin</p>
-                      <p className="font-bold text-black">Rs. {calculateSuggestedPrice(30).toFixed(2)}</p>
+                      <p className="font-bold text-black">Rs. {formatNumber(calculateSuggestedPrice(30))}</p>
                     </div>
                     <div>
                       <p className="text-gray-600">40% Margin</p>
-                      <p className="font-bold text-black">Rs. {calculateSuggestedPrice(40).toFixed(2)}</p>
+                      <p className="font-bold text-black">Rs. {formatNumber(calculateSuggestedPrice(40))}</p>
                     </div>
                     <div>
                       <p className="text-gray-600">50% Margin</p>
-                      <p className="font-bold text-black">Rs. {calculateSuggestedPrice(50).toFixed(2)}</p>
+                      <p className="font-bold text-black">Rs. {formatNumber(calculateSuggestedPrice(50))}</p>
                     </div>
                   </div>
                 </div>
@@ -418,10 +419,10 @@ export default function AdminRecipesPage() {
                           <tr key={recipe.id} className="border-b border-gray-200 hover:bg-gray-50">
                             <td className="py-2 px-2 text-black font-bold">{recipe.ingredient_name}</td>
                             <td className="py-2 px-2 text-gray-600">{recipe.ingredient_unit}</td>
-                            <td className="py-2 px-2 text-gray-600">{recipe.quantity_required.toFixed(2)}</td>
-                            <td className="py-2 px-2 text-gray-600">Rs. {(inventory.find((i: InventoryItem) => i.id === recipe.ingredient_id)?.average_price || 0).toFixed(2)}</td>
+                            <td className="py-2 px-2 text-gray-600">{formatNumber(recipe.quantity_required)}</td>
+                            <td className="py-2 px-2 text-gray-600">Rs. {formatNumber(inventory.find((i: InventoryItem) => i.id === recipe.ingredient_id)?.average_price || 0)}</td>
                             <td className="py-2 px-2 text-gray-600 font-bold">
-                              Rs. {(recipe.quantity_required * (inventory.find((i: InventoryItem) => i.id === recipe.ingredient_id)?.average_price || 0)).toFixed(2)}
+                              Rs. {formatNumber(recipe.quantity_required * (inventory.find((i: InventoryItem) => i.id === recipe.ingredient_id)?.average_price || 0))}
                             </td>
                             <td className="py-2 px-2">
                               <button
@@ -457,15 +458,15 @@ export default function AdminRecipesPage() {
                           </div>
                           <div>
                             <p className="text-xs text-gray-600 font-bold">Qty Required</p>
-                            <p className="text-black font-bold">{recipe.quantity_required.toFixed(2)}</p>
+                            <p className="text-black font-bold">{formatNumber(recipe.quantity_required)}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-600 font-bold">Avg Price</p>
-                            <p className="text-black font-bold">Rs. {(inventory.find((i: InventoryItem) => i.id === recipe.ingredient_id)?.average_price || 0).toFixed(2)}</p>
+                            <p className="text-black font-bold">Rs. {formatNumber(inventory.find((i: InventoryItem) => i.id === recipe.ingredient_id)?.average_price || 0)}</p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-600 font-bold">Cost</p>
-                            <p className="text-black font-bold">Rs. {(recipe.quantity_required * (inventory.find((i: InventoryItem) => i.id === recipe.ingredient_id)?.average_price || 0)).toFixed(2)}</p>
+                            <p className="text-black font-bold">Rs. {formatNumber(recipe.quantity_required * (inventory.find((i: InventoryItem) => i.id === recipe.ingredient_id)?.average_price || 0))}</p>
                           </div>
                         </div>
                       </div>

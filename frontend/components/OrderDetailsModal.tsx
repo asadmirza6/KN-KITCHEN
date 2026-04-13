@@ -5,7 +5,7 @@
  * Shows complete order information including profit breakdown
  */
 
-import { formatCurrency } from '@/lib/currency'
+import { formatCurrency, formatNumber } from '@/lib/currency'
 
 interface OrderDetailsModalProps {
   order: any
@@ -143,7 +143,7 @@ export default function OrderDetailsModal({ order, isOpen, onClose }: OrderDetai
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Profit Margin:</span>
-                  <span className="font-bold text-gray-900">{parseFloat(order.profit_margin || '0').toFixed(2)}%</span>
+                  <span className="font-bold text-gray-900">{formatNumber(parseFloat(order.profit_margin || '0'))}%</span>
                 </div>
               </div>
 

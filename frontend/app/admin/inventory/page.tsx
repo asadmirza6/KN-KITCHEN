@@ -11,6 +11,7 @@ import useSWR from 'swr'
 import { isAuthenticated, getCurrentUser } from '@/services/authService'
 import axios from '@/lib/axios'
 import { swrFetcher, swrConfig } from '@/lib/swr'
+import { formatNumber } from '@/lib/currency'
 import type { User } from '@/types/User'
 
 interface InventoryItem {
@@ -35,9 +36,11 @@ export default function AdminInventoryPage() {
   const [user, setUser] = useState<User | null>(null)
   const [mounted, setMounted] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string>('')
   const [success, setSuccess] = useState<string>('')
+  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null)
 
   const { data: inventory = [], error: inventoryError, isLoading: inventoryLoading, mutate: mutateInventory } = useSWR(
     isAuthenticated() && getCurrentUser()?.role === 'ADMIN' ? '/inventory' : null,
@@ -88,20 +91,59 @@ export default function AdminInventoryPage() {
       formDataToSend.append('current_stock', formData.current_stock.toString())
       formDataToSend.append('average_price', formData.average_price.toString())
 
-      const response = await axios.post('/inventory', formDataToSend, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
+      if (editingId) {
+        await axios.patch(`/inventory/${editingId}`, formDataToSend, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        })
+        setSuccess('Inventory item updated successfully!')
+        setEditingId(null)
+      } else {
+        await axios.post('/inventory', formDataToSend, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        })
+        setSuccess('Inventory item created successfully!')
+      }
 
-      setSuccess('Inventory item created successfully!')
       setFormData({ item_name: '', unit: '', current_stock: 0, average_price: 0 })
       setShowForm(false)
       mutateInventory()
     } catch (err: any) {
-      const errorMessage = err.response?.data?.detail || err.message || 'Failed to create inventory item'
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to save inventory item'
       setFormError(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage))
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const handleEdit = (item: InventoryItem) => {
+    setFormData({
+      item_name: item.item_name,
+      unit: item.unit,
+      current_stock: item.current_stock,
+      average_price: item.average_price,
+    })
+    setEditingId(item.id)
+    setShowForm(true)
+    setFormError('')
+  }
+
+  const handleDelete = async (itemId: number) => {
+    try {
+      await axios.delete(`/inventory/${itemId}`)
+      setSuccess('Inventory item deleted successfully!')
+      setDeleteConfirm(null)
+      mutateInventory()
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to delete inventory item'
+      setFormError(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage))
+    }
+  }
+
+  const handleCancel = () => {
+    setShowForm(false)
+    setEditingId(null)
+    setFormData({ item_name: '', unit: '', current_stock: 0, average_price: 0 })
+    setFormError('')
   }
 
   // Check if stock is low (threshold: 5 units)
@@ -111,6 +153,11 @@ export default function AdminInventoryPage() {
 
   // Get low stock items
   const lowStockItems = inventory.filter((item: InventoryItem) => isLowStock(item.current_stock))
+
+  // Format quantity without decimals
+  const formatQuantity = (qty: number): string => {
+    return Math.round(qty).toString()
+  }
 
   if (!mounted) {
     return <div className="p-10 text-center text-black font-bold">Loading...</div>
@@ -128,7 +175,10 @@ export default function AdminInventoryPage() {
             ← Back
           </button>
           <button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => {
+              setShowForm(!showForm)
+              if (showForm) handleCancel()
+            }}
             className="w-full sm:w-auto bg-indigo-600 text-white px-4 py-2 rounded font-bold hover:bg-indigo-700 text-sm sm:text-base"
           >
             {showForm ? 'Close' : '+ Add Inventory Item'}
@@ -153,7 +203,7 @@ export default function AdminInventoryPage() {
                   <ul className="list-disc list-inside space-y-1">
                     {lowStockItems.map((item: InventoryItem) => (
                       <li key={item.id}>
-                        <strong>{item.item_name}</strong> - Current: {item.current_stock.toFixed(2)} {item.unit}
+                        <strong>{item.item_name}</strong> - Current: {formatQuantity(item.current_stock)} {item.unit}
                       </li>
                     ))}
                   </ul>
@@ -175,11 +225,11 @@ export default function AdminInventoryPage() {
           </div>
         )}
 
-        {/* Create Form */}
+        {/* Create/Edit Form */}
         {showForm && (
           <div className="bg-white shadow rounded-lg p-4 sm:p-6 mb-6">
             <h2 className="text-lg sm:text-xl lg:text-2xl font-bold mb-4 text-black">
-              Add New Inventory Item
+              {editingId ? 'Edit Inventory Item' : 'Add New Inventory Item'}
             </h2>
 
             <form onSubmit={handleCreateInventory} className="space-y-4">
@@ -249,15 +299,11 @@ export default function AdminInventoryPage() {
                   disabled={submitting}
                   className="flex-1 bg-green-600 text-white px-4 py-2 rounded font-bold hover:bg-green-700 disabled:opacity-50 text-sm sm:text-base"
                 >
-                  {submitting ? 'Creating...' : 'Create Item'}
+                  {submitting ? 'Saving...' : editingId ? 'Update Item' : 'Create Item'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowForm(false)
-                    setFormData({ item_name: '', unit: '', current_stock: 0, average_price: 0 })
-                    setFormError('')
-                  }}
+                  onClick={handleCancel}
                   className="flex-1 bg-gray-400 text-white px-4 py-2 rounded font-bold hover:bg-gray-500 text-sm sm:text-base"
                 >
                   Cancel
@@ -293,6 +339,7 @@ export default function AdminInventoryPage() {
                       <th className="text-left py-3 px-3 sm:px-4 font-semibold text-black text-sm">Avg Price</th>
                       <th className="text-left py-3 px-3 sm:px-4 font-semibold text-black text-sm">Total Value</th>
                       <th className="text-left py-3 px-3 sm:px-4 font-semibold text-black text-sm">Updated</th>
+                      <th className="text-left py-3 px-3 sm:px-4 font-semibold text-black text-sm">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -307,15 +354,33 @@ export default function AdminInventoryPage() {
                           </div>
                         </td>
                         <td className={`py-3 px-3 sm:px-4 font-bold text-sm ${isLowStock(item.current_stock) ? 'text-red-600' : 'text-gray-600'}`}>
-                          {item.current_stock.toFixed(2)}
+                          {formatQuantity(item.current_stock)}
                         </td>
                         <td className="py-3 px-3 sm:px-4 text-gray-600 text-sm">{item.unit}</td>
-                        <td className="py-3 px-3 sm:px-4 text-gray-600 text-sm">Rs. {item.average_price.toFixed(2)}</td>
+                        <td className="py-3 px-3 sm:px-4 text-gray-600 text-sm">Rs. {formatNumber(item.average_price)}</td>
                         <td className="py-3 px-3 sm:px-4 text-gray-600 font-bold text-sm">
-                          Rs. {(item.current_stock * item.average_price).toFixed(2)}
+                          Rs. {formatNumber(item.current_stock * item.average_price)}
                         </td>
                         <td className="py-3 px-3 sm:px-4 text-gray-600 text-xs sm:text-sm">
                           {new Date(item.updated_at).toLocaleDateString()}
+                        </td>
+                        <td className="py-3 px-3 sm:px-4 text-sm">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEdit(item)}
+                              className="text-blue-600 hover:text-blue-800 font-bold"
+                              title="Edit"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirm(item.id)}
+                              className="text-red-600 hover:text-red-800 font-bold"
+                              title="Delete"
+                            >
+                              🗑️
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -329,24 +394,40 @@ export default function AdminInventoryPage() {
                   <div key={item.id} className={`bg-white border-l-4 rounded-lg p-3 sm:p-4 ${isLowStock(item.current_stock) ? 'border-red-500 bg-red-50' : 'border-indigo-600'}`}>
                     <div className="flex justify-between items-start mb-2 sm:mb-3">
                       <h3 className="text-base sm:text-lg font-bold text-black">{item.item_name}</h3>
-                      {isLowStock(item.current_stock) && (
-                        <span className="bg-red-500 text-white text-xs px-2 py-1 rounded font-bold">⚠️ LOW</span>
-                      )}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEdit(item)}
+                          className="text-blue-600 hover:text-blue-800 font-bold text-lg"
+                          title="Edit"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm(item.id)}
+                          className="text-red-600 hover:text-red-800 font-bold text-lg"
+                          title="Delete"
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </div>
+                    {isLowStock(item.current_stock) && (
+                      <p className="text-xs font-bold text-red-600 mb-2">⚠️ LOW STOCK</p>
+                    )}
                     <div className="grid grid-cols-2 gap-2 sm:gap-3 bg-gray-50 p-2 sm:p-3 rounded">
                       <div>
                         <p className="text-xs text-gray-700 font-bold">Current Stock</p>
                         <p className={`text-black font-bold text-sm ${isLowStock(item.current_stock) ? 'text-red-600' : ''}`}>
-                          {item.current_stock.toFixed(2)} {item.unit}
+                          {formatQuantity(item.current_stock)} {item.unit}
                         </p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-700 font-bold">Avg Price</p>
-                        <p className="text-black font-bold text-sm">Rs. {item.average_price.toFixed(2)}</p>
+                        <p className="text-black font-bold text-sm">Rs. {formatNumber(item.average_price)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-700 font-bold">Total Value</p>
-                        <p className="text-black font-bold text-sm">Rs. {(item.current_stock * item.average_price).toFixed(2)}</p>
+                        <p className="text-black font-bold text-sm">Rs. {formatNumber(item.current_stock * item.average_price)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-700 font-bold">Updated</p>
@@ -359,6 +440,32 @@ export default function AdminInventoryPage() {
             </>
           )}
         </div>
+
+        {/* Delete Confirmation Modal */}
+        {deleteConfirm !== null && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-4 sm:p-6">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">Delete Inventory Item?</h3>
+              <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
+                Are you sure you want to delete this inventory item? This action cannot be undone.
+              </p>
+              <div className="flex gap-2 sm:gap-3">
+                <button
+                  onClick={() => handleDelete(deleteConfirm)}
+                  className="flex-1 bg-red-600 text-white px-4 py-2 rounded font-bold hover:bg-red-700 text-sm sm:text-base"
+                >
+                  Delete
+                </button>
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  className="flex-1 bg-gray-400 text-white px-4 py-2 rounded font-bold hover:bg-gray-500 text-sm sm:text-base"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

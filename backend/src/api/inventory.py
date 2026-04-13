@@ -270,3 +270,100 @@ def update_inventory_with_weighted_average(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error updating inventory with weighted average: {str(e)}"
         )
+
+
+@router.patch("/{item_id}", dependencies=[Depends(verify_jwt), Depends(require_admin)])
+def patch_inventory_item(
+    item_id: int,
+    item_name: Optional[str] = Form(None),
+    unit: Optional[str] = Form(None),
+    session: Session = Depends(get_session)
+):
+    """
+    Partially update inventory item (name and/or unit).
+    Requires admin authentication.
+    """
+    try:
+        item = session.get(Inventory, item_id)
+        if not item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Inventory item {item_id} not found"
+            )
+
+        if item_name is not None and item_name.strip():
+            item.item_name = item_name.strip()
+        if unit is not None and unit.strip():
+            item.unit = unit.strip()
+
+        item.updated_at = datetime.utcnow()
+        session.add(item)
+        session.commit()
+        session.refresh(item)
+
+        return {
+            "id": item.id,
+            "item_name": item.item_name,
+            "current_stock": item.current_stock,
+            "unit": item.unit,
+            "average_price": float(item.average_price),
+            "created_at": item.created_at.isoformat(),
+            "updated_at": item.updated_at.isoformat(),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error updating inventory item: {str(e)}"
+        )
+
+
+@router.delete("/{item_id}", dependencies=[Depends(verify_jwt), Depends(require_admin)])
+def delete_inventory_item(
+    item_id: int,
+    session: Session = Depends(get_session)
+):
+    """
+    Delete an inventory item.
+    Only allowed if the item is NOT linked to any Recipe.
+    Requires admin authentication.
+    """
+    try:
+        from ..models import Recipe
+
+        item = session.get(Inventory, item_id)
+        if not item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Inventory item {item_id} not found"
+            )
+
+        # Check if item is linked to any recipe
+        linked_recipes = session.exec(
+            select(Recipe).where(Recipe.ingredient_id == item_id)
+        ).all()
+
+        if linked_recipes:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot delete inventory item '{item.item_name}' - it is linked to {len(linked_recipes)} recipe(s)"
+            )
+
+        session.delete(item)
+        session.commit()
+
+        return {
+            "message": f"Inventory item '{item.item_name}' deleted successfully",
+            "id": item_id
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error deleting inventory item: {str(e)}"
+        )
+

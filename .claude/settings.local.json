@@ -61,7 +61,8 @@
       "Bash(xargs ls:*)",
       "Bash(pkill -9 -f \"uvicorn src.main\")",
       "Bash(alembic current:*)",
-      "Bash(awk '{print $2}')"
+      "Bash(awk '{print $2}')",
+      "Bash(git checkout:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

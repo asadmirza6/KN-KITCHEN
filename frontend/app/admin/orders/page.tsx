@@ -70,7 +70,7 @@ export default function AdminOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
 
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'partial' | 'paid' | 'cancelled'>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'processing' | 'completed' | 'cancelled'>('all')
 
   // SWR hooks for data fetching
   const { data: items = [], error: itemsError, isLoading: itemsLoading, mutate: mutateItems } = useSWR(
@@ -133,7 +133,7 @@ export default function AdminOrdersPage() {
     }
 
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(order => order.status === statusFilter)
+      filtered = filtered.filter(order => mapStatusToDisplay(order.status) === statusFilter)
     }
     return filtered
   }
@@ -327,18 +327,30 @@ export default function AdminOrdersPage() {
     } catch (err) { setFormError('Invoice failed') }
   }
 
+  // Map backend status to display status
+  const mapStatusToDisplay = (status: string): string => {
+    const statusMap: {[key: string]: string} = {
+      'pending': 'pending',
+      'partial': 'processing',
+      'paid': 'completed',
+      'Processing': 'processing',
+      'Completed': 'completed',
+      'cancelled': 'cancelled'
+    }
+    return statusMap[status] || status
+  }
+
   const getStatusBadge = (s: string) => {
+    const displayStatus = mapStatusToDisplay(s)
     const colors: {[key: string]: string} = {
       pending: 'bg-yellow-200 text-yellow-900',
-      partial: 'bg-blue-200 text-blue-900',
-      paid: 'bg-green-200 text-green-900',
-      cancelled: 'bg-red-200 text-red-900',
-      Processing: 'bg-orange-200 text-orange-900',
-      Completed: 'bg-green-200 text-green-900'
+      processing: 'bg-orange-200 text-orange-900',
+      completed: 'bg-green-200 text-green-900',
+      cancelled: 'bg-red-200 text-red-900'
     }
     return (
-      <span className={`px-3 py-1 text-xs font-semibold rounded-full ${colors[s] || 'bg-gray-200 text-gray-900'}`}>
-        {s.toUpperCase()}
+      <span className={`px-3 py-1 text-xs font-semibold rounded-full ${colors[displayStatus] || 'bg-gray-200 text-gray-900'}`}>
+        {displayStatus.toUpperCase()}
       </span>
     )
   }
@@ -566,8 +578,8 @@ export default function AdminOrdersPage() {
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)} className="border p-2 rounded text-black font-bold flex-1 text-sm sm:text-base">
             <option value="all">All Status</option>
             <option value="pending">Pending</option>
-            <option value="partial">Partial</option>
-            <option value="paid">Paid</option>
+            <option value="processing">Processing</option>
+            <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>
         </div>

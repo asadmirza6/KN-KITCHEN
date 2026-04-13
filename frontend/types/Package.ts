@@ -9,6 +9,8 @@ export interface Package {
   description?: string | null
   image_url: string | null
   validity?: string | null
+  price?: number | null
+  servings?: number | null
   created_at: string // ISO 8601 datetime string
 }
 

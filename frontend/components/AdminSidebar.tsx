@@ -49,6 +49,7 @@ export default function AdminSidebar({ onClose }: AdminSidebarProps) {
         { label: 'Dashboard', href: '/admin', icon: '📊' },
         { label: 'Orders', href: '/admin/orders', icon: '📋' },
         { label: 'Quotations', href: '/admin/quotations', icon: '📄' },
+        { label: 'Analytics', href: '/admin/analytics', icon: '📈' },
       ]
     },
     {
