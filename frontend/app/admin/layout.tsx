@@ -18,6 +18,7 @@ export default function AdminLayout({
 }) {
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -40,33 +41,61 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex">
-      {/* Sidebar */}
-      <AdminSidebar />
+    <div className="flex h-screen">
+      {/* Sidebar - Hidden on mobile, visible on desktop */}
+      <div className="hidden md:block">
+        <AdminSidebar />
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Mobile Sidebar */}
+      <div
+        className={`fixed left-0 top-0 h-screen w-64 bg-gray-900 text-white z-40 transform transition-transform duration-300 md:hidden ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <AdminSidebar onClose={() => setSidebarOpen(false)} />
+      </div>
 
       {/* Main Content */}
-      <main className="flex-1 ml-64 bg-gray-50 min-h-screen">
+      <main className="flex-1 flex flex-col overflow-hidden">
         {/* Top Navigation Bar */}
-        <div className="bg-white shadow-sm sticky top-0 z-40">
-          <div className="px-8 py-4 flex items-center justify-between">
-            <h1 className="text-xl font-semibold text-gray-900">Admin Panel</h1>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => {
-                  localStorage.removeItem('auth_token')
-                  localStorage.removeItem('current_user')
-                  router.push('/login')
-                }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
-              >
-                Logout
-              </button>
-            </div>
+        <div className="bg-white shadow-sm sticky top-0 z-20">
+          <div className="px-4 md:px-8 py-4 flex items-center justify-between">
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+
+            <h1 className="text-lg md:text-xl font-semibold text-gray-900">Admin Panel</h1>
+
+            <button
+              onClick={() => {
+                localStorage.removeItem('auth_token')
+                localStorage.removeItem('current_user')
+                router.push('/login')
+              }}
+              className="px-3 md:px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+            >
+              Logout
+            </button>
           </div>
         </div>
 
         {/* Breadcrumb and Content */}
-        <div className="px-8 py-6">
+        <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6">
           <Breadcrumb />
           {children}
         </div>

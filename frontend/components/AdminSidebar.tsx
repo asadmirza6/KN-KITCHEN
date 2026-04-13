@@ -22,7 +22,11 @@ interface NavSection {
   collapsible?: boolean
 }
 
-export default function AdminSidebar() {
+interface AdminSidebarProps {
+  onClose?: () => void
+}
+
+export default function AdminSidebar({ onClose }: AdminSidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -84,6 +88,12 @@ export default function AdminSidebar() {
     return pathname.startsWith(href)
   }
 
+  const handleNavClick = () => {
+    if (onClose) {
+      onClose()
+    }
+  }
+
   return (
     <aside className="w-64 bg-gray-900 text-white h-screen overflow-y-auto fixed left-0 top-0 pt-20">
       <nav className="p-4 space-y-6">
@@ -109,6 +119,7 @@ export default function AdminSidebar() {
                   <Link
                     key={itemIdx}
                     href={item.href}
+                    onClick={handleNavClick}
                     className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                       isActive(item.href)
                         ? 'bg-indigo-600 text-white'

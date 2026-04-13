@@ -465,94 +465,154 @@ export default function AdminUsersPage() {
               No users found. Click "Add New User" to create one.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Role
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Created
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {users.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{user.email}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          user.role === 'ADMIN'
-                            ? 'bg-purple-100 text-purple-800'
-                            : 'bg-green-100 text-green-800'
-                        }`}>
-                          {user.role}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">
-                          {new Date(user.created_at).toLocaleDateString()}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        {currentUser?.role === 'ADMIN' && (
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => getUserOrders(user)}
-                              className="text-blue-600 hover:text-blue-900"
-                              title="View user orders"
-                            >
-                              Orders
-                            </button>
-                            <button
-                              onClick={() => handleEditUser(user)}
-                              className="text-indigo-600 hover:text-indigo-900"
-                              title="Edit user"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleOpenPasswordReset(user)}
-                              className="text-yellow-600 hover:text-yellow-900"
-                              title="Reset password"
-                            >
-                              Reset Pass
-                            </button>
-                            <button
-                              onClick={() => handleDelete(user)}
-                              disabled={user.id === currentUser?.id}
-                              className={`${
-                                user.id === currentUser?.id
-                                  ? 'text-gray-400 cursor-not-allowed'
-                                  : 'text-red-600 hover:text-red-900'
-                              }`}
-                              title={user.id === currentUser?.id ? 'Cannot delete your own account' : 'Delete user'}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        )}
-                      </td>
+            <>
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Role
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Created
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {users.map((user) => (
+                      <tr key={user.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{user.email}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            user.role === 'ADMIN'
+                              ? 'bg-purple-100 text-purple-800'
+                              : 'bg-green-100 text-green-800'
+                          }`}>
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-500">
+                            {new Date(user.created_at).toLocaleDateString()}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          {currentUser?.role === 'ADMIN' && (
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => getUserOrders(user)}
+                                className="text-blue-600 hover:text-blue-900"
+                                title="View user orders"
+                              >
+                                Orders
+                              </button>
+                              <button
+                                onClick={() => handleEditUser(user)}
+                                className="text-indigo-600 hover:text-indigo-900"
+                                title="Edit user"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleOpenPasswordReset(user)}
+                                className="text-yellow-600 hover:text-yellow-900"
+                                title="Reset password"
+                              >
+                                Reset Pass
+                              </button>
+                              <button
+                                onClick={() => handleDelete(user)}
+                                disabled={user.id === currentUser?.id}
+                                className={`${
+                                  user.id === currentUser?.id
+                                    ? 'text-gray-400 cursor-not-allowed'
+                                    : 'text-red-600 hover:text-red-900'
+                                }`}
+                                title={user.id === currentUser?.id ? 'Cannot delete your own account' : 'Delete user'}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="md:hidden space-y-4 p-4">
+                {users.map((user) => (
+                  <div key={user.id} className="bg-white border-l-4 border-indigo-600 rounded-lg p-4">
+                    <div className="mb-3">
+                      <h3 className="text-lg font-bold text-gray-900">{user.name}</h3>
+                      <p className="text-sm text-gray-600">{user.email}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Created {new Date(user.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="mb-3">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        user.role === 'ADMIN'
+                          ? 'bg-purple-100 text-purple-800'
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {user.role}
+                      </span>
+                    </div>
+                    {currentUser?.role === 'ADMIN' && (
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => getUserOrders(user)}
+                          className="flex-1 min-w-[70px] bg-blue-600 text-white px-2 py-2 rounded text-xs font-bold hover:bg-blue-700"
+                        >
+                          Orders
+                        </button>
+                        <button
+                          onClick={() => handleEditUser(user)}
+                          className="flex-1 min-w-[70px] bg-indigo-600 text-white px-2 py-2 rounded text-xs font-bold hover:bg-indigo-700"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleOpenPasswordReset(user)}
+                          className="flex-1 min-w-[70px] bg-yellow-600 text-white px-2 py-2 rounded text-xs font-bold hover:bg-yellow-700"
+                        >
+                          Reset
+                        </button>
+                        <button
+                          onClick={() => handleDelete(user)}
+                          disabled={user.id === currentUser?.id}
+                          className={`flex-1 min-w-[70px] px-2 py-2 rounded text-xs font-bold ${
+                            user.id === currentUser?.id
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              : 'bg-red-600 text-white hover:bg-red-700'
+                          }`}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>

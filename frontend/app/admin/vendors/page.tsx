@@ -243,37 +243,72 @@ export default function AdminVendorsPage() {
               <p>No vendors found. Click "Add Vendor" to add one.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-semibold text-black">Name</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Category</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Contact</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Total Purchases</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Total Payments</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Balance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {vendors.map((vendor: Vendor) => (
-                    <tr key={vendor.id} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="py-3 px-4 text-black font-bold">{vendor.name}</td>
-                      <td className="py-3 px-4 text-gray-600">{vendor.category}</td>
-                      <td className="py-3 px-4 text-gray-600 text-sm">{vendor.contact_info}</td>
-                      <td className="py-3 px-4 text-gray-600">Rs. {vendor.total_purchases.toFixed(2)}</td>
-                      <td className="py-3 px-4 text-gray-600">Rs. {vendor.total_payments.toFixed(2)}</td>
-                      <td className={`py-3 px-4 font-bold ${getBalanceColor(vendor.balance)}`}>
-                        Rs. {vendor.balance.toFixed(2)}
-                        <div className="text-xs text-gray-500 mt-1">
-                          {vendor.balance > 0 ? '(We owe)' : vendor.balance < 0 ? '(They owe)' : '(Settled)'}
-                        </div>
-                      </td>
+            <>
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-4 font-semibold text-black">Name</th>
+                      <th className="text-left py-3 px-4 font-semibold text-black">Category</th>
+                      <th className="text-left py-3 px-4 font-semibold text-black">Contact</th>
+                      <th className="text-left py-3 px-4 font-semibold text-black">Total Purchases</th>
+                      <th className="text-left py-3 px-4 font-semibold text-black">Total Payments</th>
+                      <th className="text-left py-3 px-4 font-semibold text-black">Balance</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {vendors.map((vendor: Vendor) => (
+                      <tr key={vendor.id} className="border-b border-gray-200 hover:bg-gray-50">
+                        <td className="py-3 px-4 text-black font-bold">{vendor.name}</td>
+                        <td className="py-3 px-4 text-gray-600">{vendor.category}</td>
+                        <td className="py-3 px-4 text-gray-600 text-sm">{vendor.contact_info}</td>
+                        <td className="py-3 px-4 text-gray-600">Rs. {vendor.total_purchases.toFixed(2)}</td>
+                        <td className="py-3 px-4 text-gray-600">Rs. {vendor.total_payments.toFixed(2)}</td>
+                        <td className={`py-3 px-4 font-bold ${getBalanceColor(vendor.balance)}`}>
+                          Rs. {vendor.balance.toFixed(2)}
+                          <div className="text-xs text-gray-500 mt-1">
+                            {vendor.balance > 0 ? '(We owe)' : vendor.balance < 0 ? '(They owe)' : '(Settled)'}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="md:hidden space-y-4">
+                {vendors.map((vendor: Vendor) => (
+                  <div key={vendor.id} className="bg-white border-l-4 border-indigo-600 rounded-lg p-4">
+                    <div className="mb-3">
+                      <h3 className="text-lg font-bold text-black">{vendor.name}</h3>
+                      <p className="text-sm text-gray-600">{vendor.category}</p>
+                      <p className="text-sm text-gray-600">{vendor.contact_info}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 bg-gray-50 p-3 rounded">
+                      <div>
+                        <p className="text-xs text-gray-700 font-bold">Total Purchases</p>
+                        <p className="text-black font-bold">Rs. {vendor.total_purchases.toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-700 font-bold">Total Payments</p>
+                        <p className="text-black font-bold">Rs. {vendor.total_payments.toFixed(2)}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-xs text-gray-700 font-bold">Balance</p>
+                        <p className={`text-black font-bold ${getBalanceColor(vendor.balance)}`}>
+                          Rs. {vendor.balance.toFixed(2)}
+                          <span className="text-xs text-gray-500 ml-2">
+                            {vendor.balance > 0 ? '(We owe)' : vendor.balance < 0 ? '(They owe)' : '(Settled)'}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>

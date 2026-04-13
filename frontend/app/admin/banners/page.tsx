@@ -269,7 +269,8 @@ export default function AdminBannersPage() {
                   key={banner.id}
                   className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
                 >
-                  <div className="flex items-center gap-4 p-4">
+                  {/* Desktop Layout */}
+                  <div className="hidden md:flex items-center gap-4 p-4">
                     {/* Banner Preview */}
                     <div className="flex-shrink-0">
                       <img
@@ -315,6 +316,52 @@ export default function AdminBannersPage() {
                       <button
                         onClick={() => handleDelete(banner)}
                         className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm font-medium"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Mobile Layout */}
+                  <div className="md:hidden p-4 space-y-3">
+                    <img
+                      src={banner.image_url}
+                      alt={banner.title || 'Banner'}
+                      className="w-full h-32 object-cover rounded"
+                    />
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900">
+                        {banner.title || 'Untitled Banner'}
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Created {new Date(banner.created_at).toLocaleDateString()}
+                      </p>
+                      <div className="mt-2">
+                        {banner.is_active ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            Inactive
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleToggleActive(banner)}
+                        className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium ${
+                          banner.is_active
+                            ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                            : 'bg-green-100 text-green-700 hover:bg-green-200'
+                        }`}
+                      >
+                        {banner.is_active ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(banner)}
+                        className="flex-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm font-medium"
                       >
                         Delete
                       </button>

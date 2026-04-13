@@ -281,45 +281,82 @@ export default function AdminInventoryPage() {
               <p>No inventory items found. Click "Add Inventory Item" to add one.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-semibold text-black">Item Name</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Current Stock</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Unit</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Avg Price</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Total Value</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Updated</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {inventory.map((item: InventoryItem) => (
-                    <tr key={item.id} className={`border-b border-gray-200 hover:bg-gray-50 ${isLowStock(item.current_stock) ? 'bg-red-50' : ''}`}>
-                      <td className="py-3 px-4 text-black font-bold">
-                        <div className="flex items-center gap-2">
-                          {item.item_name}
-                          {isLowStock(item.current_stock) && (
-                            <span className="bg-red-500 text-white text-xs px-2 py-1 rounded font-bold">⚠️ LOW</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className={`py-3 px-4 font-bold ${isLowStock(item.current_stock) ? 'text-red-600' : 'text-gray-600'}`}>
-                        {item.current_stock.toFixed(2)}
-                      </td>
-                      <td className="py-3 px-4 text-gray-600">{item.unit}</td>
-                      <td className="py-3 px-4 text-gray-600">Rs. {item.average_price.toFixed(2)}</td>
-                      <td className="py-3 px-4 text-gray-600 font-bold">
-                        Rs. {(item.current_stock * item.average_price).toFixed(2)}
-                      </td>
-                      <td className="py-3 px-4 text-gray-600 text-sm">
-                        {new Date(item.updated_at).toLocaleDateString()}
-                      </td>
+            <>
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-4 font-semibold text-black">Item Name</th>
+                      <th className="text-left py-3 px-4 font-semibold text-black">Current Stock</th>
+                      <th className="text-left py-3 px-4 font-semibold text-black">Unit</th>
+                      <th className="text-left py-3 px-4 font-semibold text-black">Avg Price</th>
+                      <th className="text-left py-3 px-4 font-semibold text-black">Total Value</th>
+                      <th className="text-left py-3 px-4 font-semibold text-black">Updated</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {inventory.map((item: InventoryItem) => (
+                      <tr key={item.id} className={`border-b border-gray-200 hover:bg-gray-50 ${isLowStock(item.current_stock) ? 'bg-red-50' : ''}`}>
+                        <td className="py-3 px-4 text-black font-bold">
+                          <div className="flex items-center gap-2">
+                            {item.item_name}
+                            {isLowStock(item.current_stock) && (
+                              <span className="bg-red-500 text-white text-xs px-2 py-1 rounded font-bold">⚠️ LOW</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className={`py-3 px-4 font-bold ${isLowStock(item.current_stock) ? 'text-red-600' : 'text-gray-600'}`}>
+                          {item.current_stock.toFixed(2)}
+                        </td>
+                        <td className="py-3 px-4 text-gray-600">{item.unit}</td>
+                        <td className="py-3 px-4 text-gray-600">Rs. {item.average_price.toFixed(2)}</td>
+                        <td className="py-3 px-4 text-gray-600 font-bold">
+                          Rs. {(item.current_stock * item.average_price).toFixed(2)}
+                        </td>
+                        <td className="py-3 px-4 text-gray-600 text-sm">
+                          {new Date(item.updated_at).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="md:hidden space-y-4">
+                {inventory.map((item: InventoryItem) => (
+                  <div key={item.id} className={`bg-white border-l-4 rounded-lg p-4 ${isLowStock(item.current_stock) ? 'border-red-500 bg-red-50' : 'border-indigo-600'}`}>
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="text-lg font-bold text-black">{item.item_name}</h3>
+                      {isLowStock(item.current_stock) && (
+                        <span className="bg-red-500 text-white text-xs px-2 py-1 rounded font-bold">⚠️ LOW</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 bg-gray-50 p-3 rounded">
+                      <div>
+                        <p className="text-xs text-gray-700 font-bold">Current Stock</p>
+                        <p className={`text-black font-bold ${isLowStock(item.current_stock) ? 'text-red-600' : ''}`}>
+                          {item.current_stock.toFixed(2)} {item.unit}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-700 font-bold">Avg Price</p>
+                        <p className="text-black font-bold">Rs. {item.average_price.toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-700 font-bold">Total Value</p>
+                        <p className="text-black font-bold">Rs. {(item.current_stock * item.average_price).toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-700 font-bold">Updated</p>
+                        <p className="text-black font-bold text-sm">{new Date(item.updated_at).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>

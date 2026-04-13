@@ -399,7 +399,9 @@ export default function AdminRecipesPage() {
               {Object.entries(recipesByProduct).map(([productId, data]: [string, any]) => (
                 <div key={productId} className="border rounded-lg p-4">
                   <h3 className="text-lg font-bold text-black mb-3">{data.product_name}</h3>
-                  <div className="overflow-x-auto">
+
+                  {/* Desktop Table */}
+                  <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-gray-200">
@@ -433,6 +435,41 @@ export default function AdminRecipesPage() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+
+                  {/* Mobile Cards */}
+                  <div className="md:hidden space-y-3">
+                    {data.ingredients.map((recipe: Recipe) => (
+                      <div key={recipe.id} className="bg-gray-50 border-l-4 border-indigo-600 rounded p-3">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-bold text-black">{recipe.ingredient_name}</h4>
+                          <button
+                            onClick={() => handleDeleteRecipe(recipe.id)}
+                            className="text-red-600 font-bold hover:text-red-800 text-sm"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div>
+                            <p className="text-xs text-gray-600 font-bold">Unit</p>
+                            <p className="text-black font-bold">{recipe.ingredient_unit}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-600 font-bold">Qty Required</p>
+                            <p className="text-black font-bold">{recipe.quantity_required.toFixed(2)}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-600 font-bold">Avg Price</p>
+                            <p className="text-black font-bold">Rs. {(inventory.find((i: InventoryItem) => i.id === recipe.ingredient_id)?.average_price || 0).toFixed(2)}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-600 font-bold">Cost</p>
+                            <p className="text-black font-bold">Rs. {(recipe.quantity_required * (inventory.find((i: InventoryItem) => i.id === recipe.ingredient_id)?.average_price || 0)).toFixed(2)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}

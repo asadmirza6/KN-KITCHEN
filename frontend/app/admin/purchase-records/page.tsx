@@ -320,34 +320,67 @@ export default function AdminPurchaseRecordsPage() {
               <p>No purchase records found.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-semibold text-black">Vendor</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Item</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Quantity</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Rate</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Total Amount</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {purchases.map((record: PurchaseRecord) => (
-                    <tr key={record.id} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="py-3 px-4 text-black font-bold">{record.vendor_name}</td>
-                      <td className="py-3 px-4 text-gray-600">{record.item_name}</td>
-                      <td className="py-3 px-4 text-gray-600">{record.quantity.toFixed(2)}</td>
-                      <td className="py-3 px-4 text-gray-600">Rs. {record.rate.toFixed(2)}</td>
-                      <td className="py-3 px-4 text-gray-600 font-bold">Rs. {record.total_amount.toFixed(2)}</td>
-                      <td className="py-3 px-4 text-gray-600 text-sm">
-                        {new Date(record.date).toLocaleDateString()}
-                      </td>
+            <>
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-4 font-semibold text-black">Vendor</th>
+                      <th className="text-left py-3 px-4 font-semibold text-black">Item</th>
+                      <th className="text-left py-3 px-4 font-semibold text-black">Quantity</th>
+                      <th className="text-left py-3 px-4 font-semibold text-black">Rate</th>
+                      <th className="text-left py-3 px-4 font-semibold text-black">Total Amount</th>
+                      <th className="text-left py-3 px-4 font-semibold text-black">Date</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {purchases.map((record: PurchaseRecord) => (
+                      <tr key={record.id} className="border-b border-gray-200 hover:bg-gray-50">
+                        <td className="py-3 px-4 text-black font-bold">{record.vendor_name}</td>
+                        <td className="py-3 px-4 text-gray-600">{record.item_name}</td>
+                        <td className="py-3 px-4 text-gray-600">{record.quantity.toFixed(2)}</td>
+                        <td className="py-3 px-4 text-gray-600">Rs. {record.rate.toFixed(2)}</td>
+                        <td className="py-3 px-4 text-gray-600 font-bold">Rs. {record.total_amount.toFixed(2)}</td>
+                        <td className="py-3 px-4 text-gray-600 text-sm">
+                          {new Date(record.date).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="md:hidden space-y-4">
+                {purchases.map((record: PurchaseRecord) => (
+                  <div key={record.id} className="bg-white border-l-4 border-indigo-600 rounded-lg p-4">
+                    <div className="mb-3">
+                      <h3 className="text-lg font-bold text-black">{record.vendor_name}</h3>
+                      <p className="text-sm text-gray-600">{record.item_name}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 bg-gray-50 p-3 rounded">
+                      <div>
+                        <p className="text-xs text-gray-700 font-bold">Quantity</p>
+                        <p className="text-black font-bold">{record.quantity.toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-700 font-bold">Rate</p>
+                        <p className="text-black font-bold">Rs. {record.rate.toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-700 font-bold">Total Amount</p>
+                        <p className="text-black font-bold">Rs. {record.total_amount.toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-700 font-bold">Date</p>
+                        <p className="text-black font-bold text-sm">{new Date(record.date).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>

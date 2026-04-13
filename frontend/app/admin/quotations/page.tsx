@@ -25,8 +25,8 @@ import type { Item } from '@/types/Item'
 
 interface ManualItem {
   name: string
-  quantity_kg: number
-  price_per_kg: number
+  quantity_kg: number | string
+  price_per_kg: number | string
 }
 
 interface QuotationFormData {
@@ -125,7 +125,7 @@ export default function AdminQuotationsPage() {
   const handleAddManualItem = () => {
     setFormData({
       ...formData,
-      manualItems: [...formData.manualItems, { name: '', quantity_kg: 0, price_per_kg: 0 }]
+      manualItems: [...formData.manualItems, { name: '', quantity_kg: '', price_per_kg: '' }]
     })
   }
 
@@ -450,27 +450,29 @@ export default function AdminQuotationsPage() {
                   {formData.selectedItems.map((item, index) => {
                     const menuItem = items.find(i => i.id === item.itemId)
                     return (
-                      <div key={index} className="flex gap-2 items-center bg-gray-50 p-3 rounded-lg">
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">{menuItem?.name}</p>
+                      <div key={index} className="flex flex-col md:flex-row gap-2 items-start md:items-center bg-gray-50 p-3 rounded-lg">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate">{menuItem?.name}</p>
                           <p className="text-sm text-gray-600">{formatCurrency(menuItem?.price_per_kg || 0)}/kg</p>
                         </div>
-                        <input
-                          type="number"
-                          min="0.1"
-                          step="0.1"
-                          value={isNaN(item.quantity) ? '' : item.quantity}
-                          onChange={(e) => handleItemChange(index, 'quantity', parseFloat(e.target.value))}
-                          placeholder="Qty (kg)"
-                          className="w-24 px-3 py-2 border border-gray-300 rounded-lg"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveItem(index)}
-                          className="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
-                        >
-                          Remove
-                        </button>
+                        <div className="flex gap-2 w-full md:w-auto">
+                          <input
+                            type="number"
+                            min="0.1"
+                            step="0.1"
+                            value={isNaN(item.quantity) ? '' : item.quantity}
+                            onChange={(e) => handleItemChange(index, 'quantity', parseFloat(e.target.value))}
+                            placeholder="Qty (kg)"
+                            className="flex-1 md:w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveItem(index)}
+                            className="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm whitespace-nowrap"
+                          >
+                            Remove
+                          </button>
+                        </div>
                       </div>
                     )
                   })}
@@ -490,41 +492,41 @@ export default function AdminQuotationsPage() {
                   </button>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {formData.manualItems.map((item, index) => (
-                    <div key={index} className="flex gap-2">
+                    <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-2 items-end">
                       <input
                         type="text"
                         value={item.name}
                         onChange={(e) => handleManualItemChange(index, 'name', e.target.value)}
                         placeholder="Item name"
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
+                        className="md:col-span-2 px-4 py-2 border border-gray-300 rounded-lg text-sm"
                       />
 
                       <input
                         type="number"
                         min="0.1"
                         step="0.1"
-                        value={isNaN(item.quantity_kg) ? '' : item.quantity_kg}
-                        onChange={(e) => handleManualItemChange(index, 'quantity_kg', parseFloat(e.target.value))}
+                        value={item.quantity_kg === '' ? '' : item.quantity_kg}
+                        onChange={(e) => handleManualItemChange(index, 'quantity_kg', e.target.value === '' ? '' : parseFloat(e.target.value))}
                         placeholder="Qty"
-                        className="w-20 px-4 py-2 border border-gray-300 rounded-lg"
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-sm"
                       />
 
                       <input
                         type="number"
                         min="0"
                         step="0.01"
-                        value={isNaN(item.price_per_kg) ? '' : item.price_per_kg}
-                        onChange={(e) => handleManualItemChange(index, 'price_per_kg', parseFloat(e.target.value))}
+                        value={item.price_per_kg === '' ? '' : item.price_per_kg}
+                        onChange={(e) => handleManualItemChange(index, 'price_per_kg', e.target.value === '' ? '' : parseFloat(e.target.value))}
                         placeholder="Price"
-                        className="w-24 px-4 py-2 border border-gray-300 rounded-lg"
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-sm"
                       />
 
                       <button
                         type="button"
                         onClick={() => handleRemoveManualItem(index)}
-                        className="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                        className="w-full md:w-auto px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm"
                       >
                         Remove
                       </button>
@@ -572,18 +574,18 @@ export default function AdminQuotationsPage() {
               </div>
 
               {/* Form Actions */}
-              <div className="flex gap-3">
+              <div className="flex flex-col md:flex-row gap-3">
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                  className="flex-1 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium"
                 >
                   {submitting ? 'Saving...' : editingId ? 'Update Quotation' : 'Create Quotation'}
                 </button>
                 <button
                   type="button"
                   onClick={handleCancelForm}
-                  className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300"
+                  className="flex-1 bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 font-medium"
                 >
                   Cancel
                 </button>
@@ -645,69 +647,125 @@ export default function AdminQuotationsPage() {
               <p>No quotations found. Click "Create Quotation" to add one.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-semibold text-gray-900">ID</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-900">Customer</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-900">Contact</th>
-                    <th className="text-right py-3 px-4 font-semibold text-gray-900">Amount</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-900">Status</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-900">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {quotations.map((quotation) => (
-                    <tr key={quotation.id} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="py-3 px-4 text-gray-900">#{quotation.id}</td>
-                      <td className="py-3 px-4 text-gray-900">{quotation.customer_name}</td>
-                      <td className="py-3 px-4 text-gray-600 text-sm">{quotation.customer_phone}</td>
-                      <td className="py-3 px-4 text-right font-semibold text-gray-900">
-                        {formatCurrency(quotation.total_amount)}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(quotation.status)}`}>
-                          {quotation.status.charAt(0).toUpperCase() + quotation.status.slice(1)}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleDownloadPDF(quotation)}
-                            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                          >
-                            PDF
-                          </button>
-                          {quotation.status === 'pending' && (
-                            <>
-                              <button
-                                onClick={() => handleEditQuotation(quotation)}
-                                className="text-purple-600 hover:text-purple-700 text-sm font-medium"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleDeleteQuotation(quotation)}
-                                className="text-red-600 hover:text-red-700 text-sm font-medium"
-                              >
-                                Delete
-                              </button>
-                              <button
-                                onClick={() => handleApproveQuotation(quotation)}
-                                className="text-green-600 hover:text-green-700 text-sm font-medium"
-                              >
-                                Approve
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
+            <>
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200 bg-gray-50">
+                      <th className="text-left py-3 px-4 font-semibold text-gray-900">ID</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-900">Customer</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-900">Contact</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-900">Amount</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-900">Status</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-900">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {quotations.map((quotation) => (
+                      <tr key={quotation.id} className="border-b border-gray-200 hover:bg-gray-50">
+                        <td className="py-3 px-4 text-gray-900">#{quotation.id}</td>
+                        <td className="py-3 px-4 text-gray-900">{quotation.customer_name}</td>
+                        <td className="py-3 px-4 text-gray-600 text-sm">{quotation.customer_phone}</td>
+                        <td className="py-3 px-4 text-right font-semibold text-gray-900">
+                          {formatCurrency(quotation.total_amount)}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(quotation.status)}`}>
+                            {quotation.status.charAt(0).toUpperCase() + quotation.status.slice(1)}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex gap-2 flex-wrap">
+                            <button
+                              onClick={() => handleDownloadPDF(quotation)}
+                              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                            >
+                              PDF
+                            </button>
+                            {quotation.status === 'pending' && (
+                              <>
+                                <button
+                                  onClick={() => handleEditQuotation(quotation)}
+                                  className="text-purple-600 hover:text-purple-700 text-sm font-medium"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteQuotation(quotation)}
+                                  className="text-red-600 hover:text-red-700 text-sm font-medium"
+                                >
+                                  Delete
+                                </button>
+                                <button
+                                  onClick={() => handleApproveQuotation(quotation)}
+                                  className="text-green-600 hover:text-green-700 text-sm font-medium"
+                                >
+                                  Approve
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="md:hidden space-y-4">
+                {quotations.map((quotation) => (
+                  <div key={quotation.id} className="bg-gray-50 rounded-lg p-4 border-l-4 border-indigo-600">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="font-bold text-gray-900">#{quotation.id}</h3>
+                        <p className="text-sm text-gray-600">{quotation.customer_name}</p>
+                      </div>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(quotation.status)}`}>
+                        {quotation.status.charAt(0).toUpperCase() + quotation.status.slice(1)}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 mb-4 text-sm">
+                      <p className="text-gray-600"><span className="font-medium">Phone:</span> {quotation.customer_phone}</p>
+                      <p className="text-gray-600"><span className="font-medium">Amount:</span> {formatCurrency(quotation.total_amount)}</p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleDownloadPDF(quotation)}
+                        className="flex-1 min-w-[70px] bg-blue-600 text-white px-3 py-2 rounded text-xs font-medium hover:bg-blue-700"
+                      >
+                        PDF
+                      </button>
+                      {quotation.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={() => handleEditQuotation(quotation)}
+                            className="flex-1 min-w-[70px] bg-purple-600 text-white px-3 py-2 rounded text-xs font-medium hover:bg-purple-700"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteQuotation(quotation)}
+                            className="flex-1 min-w-[70px] bg-red-600 text-white px-3 py-2 rounded text-xs font-medium hover:bg-red-700"
+                          >
+                            Delete
+                          </button>
+                          <button
+                            onClick={() => handleApproveQuotation(quotation)}
+                            className="flex-1 min-w-[70px] bg-green-600 text-white px-3 py-2 rounded text-xs font-medium hover:bg-green-700"
+                          >
+                            Approve
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>

@@ -379,38 +379,75 @@ export default function AdminStaffPage() {
               <p>No staff members found. Click "Add Staff" to add one.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-semibold text-black">Name</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Role</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Monthly Salary</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Total Advances</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Remaining Salary</th>
-                    <th className="text-left py-3 px-4 font-semibold text-black">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {staff.map((member: StaffMember) => (
-                    <tr key={member.id} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="py-3 px-4 text-black font-bold">{member.name}</td>
-                      <td className="py-3 px-4 text-gray-600">{member.role}</td>
-                      <td className="py-3 px-4 text-gray-600">Rs. {member.monthly_salary.toFixed(2)}</td>
-                      <td className="py-3 px-4 text-gray-600">Rs. {member.total_advances.toFixed(2)}</td>
-                      <td className="py-3 px-4 font-bold text-green-600">Rs. {member.remaining_salary.toFixed(2)}</td>
-                      <td className="py-3 px-4">
-                        <span className={`px-3 py-1 rounded text-sm font-bold ${
+            <>
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-4 font-semibold text-black">Name</th>
+                      <th className="text-left py-3 px-4 font-semibold text-black">Role</th>
+                      <th className="text-left py-3 px-4 font-semibold text-black">Monthly Salary</th>
+                      <th className="text-left py-3 px-4 font-semibold text-black">Total Advances</th>
+                      <th className="text-left py-3 px-4 font-semibold text-black">Remaining Salary</th>
+                      <th className="text-left py-3 px-4 font-semibold text-black">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {staff.map((member: StaffMember) => (
+                      <tr key={member.id} className="border-b border-gray-200 hover:bg-gray-50">
+                        <td className="py-3 px-4 text-black font-bold">{member.name}</td>
+                        <td className="py-3 px-4 text-gray-600">{member.role}</td>
+                        <td className="py-3 px-4 text-gray-600">Rs. {member.monthly_salary.toFixed(2)}</td>
+                        <td className="py-3 px-4 text-gray-600">Rs. {member.total_advances.toFixed(2)}</td>
+                        <td className="py-3 px-4 font-bold text-green-600">Rs. {member.remaining_salary.toFixed(2)}</td>
+                        <td className="py-3 px-4">
+                          <span className={`px-3 py-1 rounded text-sm font-bold ${
+                            member.remaining_salary > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {member.remaining_salary > 0 ? 'Available' : 'Exceeded'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="md:hidden space-y-4">
+                {staff.map((member: StaffMember) => (
+                  <div key={member.id} className="bg-white border-l-4 border-indigo-600 rounded-lg p-4">
+                    <div className="mb-3">
+                      <h3 className="text-lg font-bold text-black">{member.name}</h3>
+                      <p className="text-sm text-gray-600">{member.role}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 bg-gray-50 p-3 rounded mb-3">
+                      <div>
+                        <p className="text-xs text-gray-700 font-bold">Monthly Salary</p>
+                        <p className="text-black font-bold">Rs. {member.monthly_salary.toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-700 font-bold">Total Advances</p>
+                        <p className="text-black font-bold">Rs. {member.total_advances.toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-700 font-bold">Remaining Salary</p>
+                        <p className="text-green-600 font-bold">Rs. {member.remaining_salary.toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-700 font-bold">Status</p>
+                        <span className={`px-2 py-1 rounded text-xs font-bold inline-block ${
                           member.remaining_salary > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                         }`}>
                           {member.remaining_salary > 0 ? 'Available' : 'Exceeded'}
                         </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>
