@@ -117,38 +117,38 @@ export default function AdminInventoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-transparent p-4 md:p-8">
+    <div className="min-h-screen bg-transparent p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-6">
           <button
             onClick={() => router.push('/admin')}
-            className="text-indigo-600 font-bold hover:text-indigo-800"
+            className="text-indigo-600 font-bold hover:text-indigo-800 text-sm sm:text-base"
           >
             ← Back
           </button>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="w-full md:w-auto bg-indigo-600 text-white px-4 py-2 rounded font-bold hover:bg-indigo-700"
+            className="w-full sm:w-auto bg-indigo-600 text-white px-4 py-2 rounded font-bold hover:bg-indigo-700 text-sm sm:text-base"
           >
             {showForm ? 'Close' : '+ Add Inventory Item'}
           </button>
         </div>
 
-        <h1 className="text-3xl font-bold mb-6 text-black">Inventory Management</h1>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6 text-black">Inventory Management</h1>
 
         {/* Low Stock Alert */}
         {lowStockItems.length > 0 && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded">
-            <div className="flex items-start">
+          <div className="bg-red-50 border-l-4 border-red-500 p-3 sm:p-4 mb-4 sm:mb-6 rounded">
+            <div className="flex items-start gap-3">
               <div className="flex-shrink-0">
                 <svg className="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                 </svg>
               </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-bold text-red-800">Low Stock Alert</h3>
-                <div className="mt-2 text-sm text-red-700">
+              <div className="flex-1">
+                <h3 className="text-xs sm:text-sm font-bold text-red-800">Low Stock Alert</h3>
+                <div className="mt-2 text-xs sm:text-sm text-red-700">
                   <p className="font-bold mb-2">{lowStockItems.length} item(s) have low stock (less than 5 units):</p>
                   <ul className="list-disc list-inside space-y-1">
                     {lowStockItems.map((item: InventoryItem) => (
@@ -165,27 +165,27 @@ export default function AdminInventoryPage() {
 
         {/* Error/Success Messages */}
         {formError && (
-          <div className="bg-red-100 text-red-900 p-4 rounded mb-4 font-bold">
+          <div className="bg-red-100 text-red-900 p-3 sm:p-4 rounded mb-4 font-bold text-sm sm:text-base">
             {formError}
           </div>
         )}
         {success && (
-          <div className="bg-green-100 text-green-900 p-4 rounded mb-4 font-bold">
+          <div className="bg-green-100 text-green-900 p-3 sm:p-4 rounded mb-4 font-bold text-sm sm:text-base">
             {success}
           </div>
         )}
 
         {/* Create Form */}
         {showForm && (
-          <div className="bg-white shadow rounded-lg p-4 md:p-6 mb-6">
-            <h2 className="text-xl md:text-2xl font-bold mb-4 text-black">
+          <div className="bg-white shadow rounded-lg p-4 sm:p-6 mb-6">
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold mb-4 text-black">
               Add New Inventory Item
             </h2>
 
             <form onSubmit={handleCreateInventory} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-black mb-1">
+                  <label className="block text-xs sm:text-sm font-bold text-black mb-1">
                     Item Name *
                   </label>
                   <input
@@ -193,13 +193,13 @@ export default function AdminInventoryPage() {
                     placeholder="e.g., Chicken Breast"
                     value={formData.item_name}
                     onChange={(e) => setFormData({ ...formData, item_name: e.target.value })}
-                    className="border p-2 rounded w-full text-black font-bold"
+                    className="border p-2 rounded w-full text-black font-bold text-sm"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-black mb-1">
+                  <label className="block text-xs sm:text-sm font-bold text-black mb-1">
                     Unit *
                   </label>
                   <input
@@ -207,15 +207,15 @@ export default function AdminInventoryPage() {
                     placeholder="e.g., kg, ltr, pieces"
                     value={formData.unit}
                     onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                    className="border p-2 rounded w-full text-black font-bold"
+                    className="border p-2 rounded w-full text-black font-bold text-sm"
                     required
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-black mb-1">
+                  <label className="block text-xs sm:text-sm font-bold text-black mb-1">
                     Initial Stock
                   </label>
                   <input
@@ -223,13 +223,13 @@ export default function AdminInventoryPage() {
                     placeholder="0"
                     value={formData.current_stock}
                     onChange={(e) => setFormData({ ...formData, current_stock: parseFloat(e.target.value) || 0 })}
-                    className="border p-2 rounded w-full text-black font-bold"
+                    className="border p-2 rounded w-full text-black font-bold text-sm"
                     step="0.01"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-black mb-1">
+                  <label className="block text-xs sm:text-sm font-bold text-black mb-1">
                     Average Price
                   </label>
                   <input
@@ -237,17 +237,17 @@ export default function AdminInventoryPage() {
                     placeholder="0.00"
                     value={formData.average_price}
                     onChange={(e) => setFormData({ ...formData, average_price: parseFloat(e.target.value) || 0 })}
-                    className="border p-2 rounded w-full text-black font-bold"
+                    className="border p-2 rounded w-full text-black font-bold text-sm"
                     step="0.01"
                   />
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-green-600 text-white px-4 py-2 rounded font-bold hover:bg-green-700 disabled:opacity-50"
+                  className="flex-1 bg-green-600 text-white px-4 py-2 rounded font-bold hover:bg-green-700 disabled:opacity-50 text-sm sm:text-base"
                 >
                   {submitting ? 'Creating...' : 'Create Item'}
                 </button>
@@ -258,7 +258,7 @@ export default function AdminInventoryPage() {
                     setFormData({ item_name: '', unit: '', current_stock: 0, average_price: 0 })
                     setFormError('')
                   }}
-                  className="bg-gray-400 text-white px-4 py-2 rounded font-bold hover:bg-gray-500"
+                  className="flex-1 bg-gray-400 text-white px-4 py-2 rounded font-bold hover:bg-gray-500 text-sm sm:text-base"
                 >
                   Cancel
                 </button>
@@ -268,17 +268,17 @@ export default function AdminInventoryPage() {
         )}
 
         {/* Inventory Table */}
-        <div className="bg-white shadow rounded-lg p-4 md:p-6">
-          <h2 className="text-xl font-bold mb-4 text-black">Current Inventory</h2>
+        <div className="bg-white shadow rounded-lg p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-bold mb-4 text-black">Current Inventory</h2>
 
           {!mounted || inventoryLoading ? (
-            <div className="p-12 text-center">
+            <div className="p-8 sm:p-12 text-center">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-              <p className="mt-4 text-gray-600">Loading inventory...</p>
+              <p className="mt-4 text-gray-600 text-sm sm:text-base">Loading inventory...</p>
             </div>
           ) : inventory.length === 0 ? (
-            <div className="p-12 text-center text-gray-500">
-              <p>No inventory items found. Click "Add Inventory Item" to add one.</p>
+            <div className="p-8 sm:p-12 text-center text-gray-500">
+              <p className="text-sm sm:text-base">No inventory items found. Click "Add Inventory Item" to add one.</p>
             </div>
           ) : (
             <>
@@ -287,18 +287,18 @@ export default function AdminInventoryPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 font-semibold text-black">Item Name</th>
-                      <th className="text-left py-3 px-4 font-semibold text-black">Current Stock</th>
-                      <th className="text-left py-3 px-4 font-semibold text-black">Unit</th>
-                      <th className="text-left py-3 px-4 font-semibold text-black">Avg Price</th>
-                      <th className="text-left py-3 px-4 font-semibold text-black">Total Value</th>
-                      <th className="text-left py-3 px-4 font-semibold text-black">Updated</th>
+                      <th className="text-left py-3 px-3 sm:px-4 font-semibold text-black text-sm">Item Name</th>
+                      <th className="text-left py-3 px-3 sm:px-4 font-semibold text-black text-sm">Current Stock</th>
+                      <th className="text-left py-3 px-3 sm:px-4 font-semibold text-black text-sm">Unit</th>
+                      <th className="text-left py-3 px-3 sm:px-4 font-semibold text-black text-sm">Avg Price</th>
+                      <th className="text-left py-3 px-3 sm:px-4 font-semibold text-black text-sm">Total Value</th>
+                      <th className="text-left py-3 px-3 sm:px-4 font-semibold text-black text-sm">Updated</th>
                     </tr>
                   </thead>
                   <tbody>
                     {inventory.map((item: InventoryItem) => (
                       <tr key={item.id} className={`border-b border-gray-200 hover:bg-gray-50 ${isLowStock(item.current_stock) ? 'bg-red-50' : ''}`}>
-                        <td className="py-3 px-4 text-black font-bold">
+                        <td className="py-3 px-3 sm:px-4 text-black font-bold text-sm">
                           <div className="flex items-center gap-2">
                             {item.item_name}
                             {isLowStock(item.current_stock) && (
@@ -306,15 +306,15 @@ export default function AdminInventoryPage() {
                             )}
                           </div>
                         </td>
-                        <td className={`py-3 px-4 font-bold ${isLowStock(item.current_stock) ? 'text-red-600' : 'text-gray-600'}`}>
+                        <td className={`py-3 px-3 sm:px-4 font-bold text-sm ${isLowStock(item.current_stock) ? 'text-red-600' : 'text-gray-600'}`}>
                           {item.current_stock.toFixed(2)}
                         </td>
-                        <td className="py-3 px-4 text-gray-600">{item.unit}</td>
-                        <td className="py-3 px-4 text-gray-600">Rs. {item.average_price.toFixed(2)}</td>
-                        <td className="py-3 px-4 text-gray-600 font-bold">
+                        <td className="py-3 px-3 sm:px-4 text-gray-600 text-sm">{item.unit}</td>
+                        <td className="py-3 px-3 sm:px-4 text-gray-600 text-sm">Rs. {item.average_price.toFixed(2)}</td>
+                        <td className="py-3 px-3 sm:px-4 text-gray-600 font-bold text-sm">
                           Rs. {(item.current_stock * item.average_price).toFixed(2)}
                         </td>
-                        <td className="py-3 px-4 text-gray-600 text-sm">
+                        <td className="py-3 px-3 sm:px-4 text-gray-600 text-xs sm:text-sm">
                           {new Date(item.updated_at).toLocaleDateString()}
                         </td>
                       </tr>
@@ -324,33 +324,33 @@ export default function AdminInventoryPage() {
               </div>
 
               {/* Mobile Cards */}
-              <div className="md:hidden space-y-4">
+              <div className="md:hidden space-y-3 sm:space-y-4">
                 {inventory.map((item: InventoryItem) => (
-                  <div key={item.id} className={`bg-white border-l-4 rounded-lg p-4 ${isLowStock(item.current_stock) ? 'border-red-500 bg-red-50' : 'border-indigo-600'}`}>
-                    <div className="flex justify-between items-start mb-3">
-                      <h3 className="text-lg font-bold text-black">{item.item_name}</h3>
+                  <div key={item.id} className={`bg-white border-l-4 rounded-lg p-3 sm:p-4 ${isLowStock(item.current_stock) ? 'border-red-500 bg-red-50' : 'border-indigo-600'}`}>
+                    <div className="flex justify-between items-start mb-2 sm:mb-3">
+                      <h3 className="text-base sm:text-lg font-bold text-black">{item.item_name}</h3>
                       {isLowStock(item.current_stock) && (
                         <span className="bg-red-500 text-white text-xs px-2 py-1 rounded font-bold">⚠️ LOW</span>
                       )}
                     </div>
-                    <div className="grid grid-cols-2 gap-3 bg-gray-50 p-3 rounded">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3 bg-gray-50 p-2 sm:p-3 rounded">
                       <div>
                         <p className="text-xs text-gray-700 font-bold">Current Stock</p>
-                        <p className={`text-black font-bold ${isLowStock(item.current_stock) ? 'text-red-600' : ''}`}>
+                        <p className={`text-black font-bold text-sm ${isLowStock(item.current_stock) ? 'text-red-600' : ''}`}>
                           {item.current_stock.toFixed(2)} {item.unit}
                         </p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-700 font-bold">Avg Price</p>
-                        <p className="text-black font-bold">Rs. {item.average_price.toFixed(2)}</p>
+                        <p className="text-black font-bold text-sm">Rs. {item.average_price.toFixed(2)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-700 font-bold">Total Value</p>
-                        <p className="text-black font-bold">Rs. {(item.current_stock * item.average_price).toFixed(2)}</p>
+                        <p className="text-black font-bold text-sm">Rs. {(item.current_stock * item.average_price).toFixed(2)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-700 font-bold">Updated</p>
-                        <p className="text-black font-bold text-sm">{new Date(item.updated_at).toLocaleDateString()}</p>
+                        <p className="text-black font-bold text-xs sm:text-sm">{new Date(item.updated_at).toLocaleDateString()}</p>
                       </div>
                     </div>
                   </div>

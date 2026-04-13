@@ -187,7 +187,7 @@ export default function AdminPurchaseRecordsPage() {
         {/* Error/Success Messages */}
         {formError && (
           <div className="bg-red-100 text-red-900 p-4 rounded mb-4 font-bold">
-            {typeof formError === 'string' ? formError : (typeof formError === 'object' && formError?.message ? formError.message : 'An error occurred')}
+            {formError}
           </div>
         )}
         {success && (

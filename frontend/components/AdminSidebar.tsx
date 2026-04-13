@@ -95,8 +95,8 @@ export default function AdminSidebar({ onClose }: AdminSidebarProps) {
   }
 
   return (
-    <aside className="w-64 bg-gray-900 text-white h-screen overflow-y-auto fixed left-0 top-0 pt-20">
-      <nav className="p-4 space-y-6">
+    <aside className="w-64 bg-gray-900 text-white h-screen overflow-y-auto flex flex-col">
+      <nav className="p-4 space-y-6 flex-1 overflow-y-auto">
         {sections.map((section, idx) => (
           <div key={idx}>
             <div className="flex items-center justify-between px-3 py-2">

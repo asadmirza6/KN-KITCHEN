@@ -17,10 +17,12 @@ import Toast from '@/components/Toast'
 interface Item {
   id: number
   name: string
+  description?: string | null
   unit_type: string
   price_per_kg: string
   image_url: string | null
   cloudinary_public_id: string | null
+  is_active?: boolean
   created_at: string
 }
 
@@ -34,7 +36,7 @@ export default function AdminItemsPage() {
   const [toast, setToast] = useState({ message: '', type: 'success' as 'success' | 'error', isVisible: false })
 
   // SWR hook for items data - use admin endpoint to get ALL items (active and inactive)
-  const { data: items = [], error: itemsError, isLoading: itemsLoading, mutate: mutateItems } = useSWR(
+  const { data: items = [] as Item[], error: itemsError, isLoading: itemsLoading, mutate: mutateItems } = useSWR(
     isAuthenticated() ? '/items/admin/all' : null,
     swrFetcher,
     swrConfig
@@ -134,7 +136,7 @@ export default function AdminItemsPage() {
     setEditingItem(item)
     setFormData({
       name: item.name,
-      description: item.description || '',
+      description: item.description ?? '',
       price_per_kg: item.price_per_kg,
       unit_type: item.unit_type || 'per_kg',
       is_active: item.is_active !== undefined ? item.is_active : true
@@ -382,7 +384,7 @@ export default function AdminItemsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {items.map((item) => (
+                  {items.map((item: Item) => (
                     <tr key={item.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedItem(item)}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {item.image_url ? (

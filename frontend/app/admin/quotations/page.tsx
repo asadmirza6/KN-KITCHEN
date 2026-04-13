@@ -89,12 +89,12 @@ export default function AdminQuotationsPage() {
 
   const calculateTotal = () => {
     const menuTotal = formData.selectedItems.reduce((total, item) => {
-      const menuItem = items.find(i => i.id === item.itemId)
+      const menuItem = items.find((i: any) => i.id === item.itemId)
       return menuItem ? total + (parseFloat(menuItem.price_per_kg) * item.quantity) : total
     }, 0)
 
     const manualTotal = formData.manualItems.reduce((total, item) =>
-      total + (item.price_per_kg * item.quantity_kg), 0)
+      total + (parseFloat(String(item.price_per_kg)) * parseFloat(String(item.quantity_kg))), 0)
 
     const subtotal = menuTotal + manualTotal
     const discountAmount = Math.max(0, formData.discount)
@@ -191,7 +191,7 @@ export default function AdminQuotationsPage() {
         customer_phone: formData.customerPhone,
         customer_address: formData.customerAddress,
         items: formData.selectedItems.map(item => {
-          const menuItem = items.find(i => i.id === item.itemId)!
+          const menuItem = items.find((i: any) => i.id === item.itemId)!
           return {
             item_id: item.itemId,
             item_name: menuItem.name,
@@ -199,7 +199,11 @@ export default function AdminQuotationsPage() {
             price_per_kg: parseFloat(menuItem.price_per_kg)
           }
         }),
-        manual_items: formData.manualItems,
+        manual_items: formData.manualItems.map(item => ({
+          name: item.name,
+          quantity_kg: parseFloat(String(item.quantity_kg)),
+          price_per_kg: parseFloat(String(item.price_per_kg))
+        })),
         total_amount: total,
         advance_payment: 0,
         delivery_date: formData.deliveryDate || undefined,
@@ -293,7 +297,6 @@ export default function AdminQuotationsPage() {
     })
     setEditingId(null)
     setFormError(null)
-    setError(null)
   }
 
   const getStatusBadgeColor = (status: string) => {
@@ -448,7 +451,7 @@ export default function AdminQuotationsPage() {
 
                 <div className="space-y-2">
                   {formData.selectedItems.map((item, index) => {
-                    const menuItem = items.find(i => i.id === item.itemId)
+                    const menuItem = items.find((i: any) => i.id === item.itemId)
                     return (
                       <div key={index} className="flex flex-col md:flex-row gap-2 items-start md:items-center bg-gray-50 p-3 rounded-lg">
                         <div className="flex-1 min-w-0">
@@ -600,7 +603,7 @@ export default function AdminQuotationsPage() {
             <div className="bg-white rounded-lg shadow-lg p-6 max-w-2xl w-full mx-4 max-h-96 overflow-y-auto">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Select Item</h3>
               <div className="space-y-2">
-                {items.map((item) => (
+                {items.map((item: any) => (
                   <button
                     key={item.id}
                     onClick={() => handleAddItemFromModal(item)}
@@ -662,7 +665,7 @@ export default function AdminQuotationsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {quotations.map((quotation) => (
+                    {quotations.map((quotation: any) => (
                       <tr key={quotation.id} className="border-b border-gray-200 hover:bg-gray-50">
                         <td className="py-3 px-4 text-gray-900">#{quotation.id}</td>
                         <td className="py-3 px-4 text-gray-900">{quotation.customer_name}</td>
@@ -715,7 +718,7 @@ export default function AdminQuotationsPage() {
 
               {/* Mobile Cards */}
               <div className="md:hidden space-y-4">
-                {quotations.map((quotation) => (
+                {quotations.map((quotation: any) => (
                   <div key={quotation.id} className="bg-gray-50 rounded-lg p-4 border-l-4 border-indigo-600">
                     <div className="flex justify-between items-start mb-3">
                       <div>

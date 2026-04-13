@@ -299,7 +299,7 @@ export default function AdminPackagesPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {packages.map((pkg) => (
+                    {packages.map((pkg: any) => (
                       <tr key={pkg.id} className="border-b border-gray-200 hover:bg-gray-50">
                         <td className="py-3 px-4">
                           {pkg.image_url ? (
@@ -346,7 +346,7 @@ export default function AdminPackagesPage() {
 
               {/* Mobile Cards */}
               <div className="md:hidden space-y-4">
-                {packages.map((pkg) => (
+                {packages.map((pkg: any) => (
                   <div key={pkg.id} className="bg-white border-l-4 border-indigo-600 rounded-lg p-4">
                     <div className="flex gap-3 mb-3">
                       {pkg.image_url ? (

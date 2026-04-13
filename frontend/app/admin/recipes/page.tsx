@@ -203,55 +203,55 @@ export default function AdminRecipesPage() {
   const totalCost = calculateTotalCost()
 
   return (
-    <div className="min-h-screen bg-transparent p-4 md:p-8">
+    <div className="min-h-screen bg-transparent p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-6">
           <button
             onClick={() => router.push('/admin')}
-            className="text-indigo-600 font-bold hover:text-indigo-800"
+            className="text-indigo-600 font-bold hover:text-indigo-800 text-sm sm:text-base"
           >
             ← Back
           </button>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="w-full md:w-auto bg-indigo-600 text-white px-4 py-2 rounded font-bold hover:bg-indigo-700"
+            className="w-full sm:w-auto bg-indigo-600 text-white px-4 py-2 rounded font-bold hover:bg-indigo-700 text-sm sm:text-base"
           >
             {showForm ? 'Close' : '+ Add Recipe'}
           </button>
         </div>
 
-        <h1 className="text-3xl font-bold mb-6 text-black">Recipe Builder</h1>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6 text-black">Recipe Builder</h1>
 
         {/* Error/Success Messages */}
         {formError && (
-          <div className="bg-red-100 text-red-900 p-4 rounded mb-4 font-bold">
+          <div className="bg-red-100 text-red-900 p-3 sm:p-4 rounded mb-4 font-bold text-sm sm:text-base">
             {typeof formError === 'string' ? formError : 'An error occurred'}
           </div>
         )}
         {success && (
-          <div className="bg-green-100 text-green-900 p-4 rounded mb-4 font-bold">
+          <div className="bg-green-100 text-green-900 p-3 sm:p-4 rounded mb-4 font-bold text-sm sm:text-base">
             {typeof success === 'string' ? success : 'Operation successful'}
           </div>
         )}
 
         {/* Create Form */}
         {showForm && (
-          <div className="bg-white shadow rounded-lg p-4 md:p-6 mb-6">
-            <h2 className="text-xl md:text-2xl font-bold mb-4 text-black">
+          <div className="bg-white shadow rounded-lg p-4 sm:p-6 mb-6">
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold mb-4 text-black">
               Add New Recipe
             </h2>
 
             <form onSubmit={handleCreateRecipe} className="space-y-4">
               {/* Menu Item Selection */}
               <div>
-                <label className="block text-sm font-bold text-black mb-1">
+                <label className="block text-xs sm:text-sm font-bold text-black mb-1">
                   Menu Item (Product) *
                 </label>
                 <select
                   value={formData.product_id}
                   onChange={(e) => setFormData({ ...formData, product_id: parseInt(e.target.value) })}
-                  className="border p-2 rounded w-full text-black font-bold"
+                  className="border p-2 rounded w-full text-black font-bold text-sm"
                   required
                 >
                   <option value={0}>Select Menu Item</option>
@@ -265,10 +265,10 @@ export default function AdminRecipesPage() {
 
               {/* Ingredients Section */}
               <div className="border-t pt-4">
-                <h3 className="text-lg font-bold text-black mb-3">Ingredients</h3>
+                <h3 className="text-base sm:text-lg font-bold text-black mb-3">Ingredients</h3>
 
                 {formData.ingredients.map((ingredient, index) => (
-                  <div key={ingredient.id} className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3 pb-3 border-b">
+                  <div key={ingredient.id} className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-3 pb-3 border-b">
                     {/* Ingredient Dropdown */}
                     <div>
                       <label className="block text-xs font-bold text-gray-600 mb-1">
@@ -277,7 +277,7 @@ export default function AdminRecipesPage() {
                       <select
                         value={ingredient.ingredient_id}
                         onChange={(e) => updateIngredient(ingredient.id, 'ingredient_id', parseInt(e.target.value))}
-                        className="border p-2 rounded w-full text-black font-bold text-sm"
+                        className="border p-2 rounded w-full text-black font-bold text-xs sm:text-sm"
                       >
                         <option value={0}>Select Ingredient</option>
                         {inventory.map((inv: InventoryItem) => {
@@ -301,7 +301,7 @@ export default function AdminRecipesPage() {
                         placeholder="0.00"
                         value={ingredient.quantity_required}
                         onChange={(e) => updateIngredient(ingredient.id, 'quantity_required', parseFloat(e.target.value) || 0)}
-                        className="border p-2 rounded w-full text-black font-bold text-sm"
+                        className="border p-2 rounded w-full text-black font-bold text-xs sm:text-sm"
                         step="0.01"
                       />
                     </div>
@@ -312,7 +312,7 @@ export default function AdminRecipesPage() {
                         type="button"
                         onClick={() => removeIngredientRow(ingredient.id)}
                         disabled={formData.ingredients.length === 1}
-                        className="w-full bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white px-3 py-2 rounded font-bold text-sm"
+                        className="w-full bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white px-3 py-2 rounded font-bold text-xs sm:text-sm"
                       >
                         Remove
                       </button>
@@ -324,7 +324,7 @@ export default function AdminRecipesPage() {
                 <button
                   type="button"
                   onClick={addIngredientRow}
-                  className="mt-3 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-bold text-sm"
+                  className="mt-3 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-bold text-xs sm:text-sm"
                 >
                   + Add Another Ingredient
                 </button>
@@ -332,8 +332,8 @@ export default function AdminRecipesPage() {
 
               {/* Cost Summary */}
               {totalCost > 0 && (
-                <div className="bg-gray-100 p-4 rounded space-y-2">
-                  <p className="text-sm text-gray-600">
+                <div className="bg-gray-100 p-3 sm:p-4 rounded space-y-2">
+                  <p className="text-xs sm:text-sm text-gray-600">
                     <strong>Total Cost per Plate:</strong> <span className="text-black font-bold">Rs. {totalCost.toFixed(2)}</span>
                   </p>
                   <div className="grid grid-cols-3 gap-2 text-xs">
@@ -354,11 +354,11 @@ export default function AdminRecipesPage() {
               )}
 
               {/* Form Buttons */}
-              <div className="flex gap-2 pt-4">
+              <div className="flex flex-col sm:flex-row gap-2 pt-4">
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-green-600 text-white px-4 py-2 rounded font-bold hover:bg-green-700 disabled:opacity-50"
+                  className="flex-1 bg-green-600 text-white px-4 py-2 rounded font-bold hover:bg-green-700 disabled:opacity-50 text-sm sm:text-base"
                 >
                   {submitting ? 'Creating...' : 'Create Recipe'}
                 </button>
@@ -372,7 +372,7 @@ export default function AdminRecipesPage() {
                     })
                     setFormError('')
                   }}
-                  className="bg-gray-400 text-white px-4 py-2 rounded font-bold hover:bg-gray-500"
+                  className="flex-1 bg-gray-400 text-white px-4 py-2 rounded font-bold hover:bg-gray-500 text-sm sm:text-base"
                 >
                   Cancel
                 </button>
@@ -382,27 +382,27 @@ export default function AdminRecipesPage() {
         )}
 
         {/* Recipes Table - Grouped by Product */}
-        <div className="bg-white shadow rounded-lg p-4 md:p-6">
-          <h2 className="text-xl font-bold mb-4 text-black">Recipes by Dish</h2>
+        <div className="bg-white shadow rounded-lg p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-bold mb-4 text-black">Recipes by Dish</h2>
 
           {!mounted || recipesLoading ? (
-            <div className="p-12 text-center">
+            <div className="p-8 sm:p-12 text-center">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-              <p className="mt-4 text-gray-600">Loading recipes...</p>
+              <p className="mt-4 text-gray-600 text-sm sm:text-base">Loading recipes...</p>
             </div>
           ) : recipes.length === 0 ? (
-            <div className="p-12 text-center text-gray-500">
-              <p>No recipes found. Click "Add Recipe" to create one.</p>
+            <div className="p-8 sm:p-12 text-center text-gray-500">
+              <p className="text-sm sm:text-base">No recipes found. Click "Add Recipe" to create one.</p>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {Object.entries(recipesByProduct).map(([productId, data]: [string, any]) => (
-                <div key={productId} className="border rounded-lg p-4">
-                  <h3 className="text-lg font-bold text-black mb-3">{data.product_name}</h3>
+                <div key={productId} className="border rounded-lg p-3 sm:p-4">
+                  <h3 className="text-base sm:text-lg font-bold text-black mb-3">{data.product_name}</h3>
 
                   {/* Desktop Table */}
                   <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full text-sm">
+                    <table className="w-full text-xs sm:text-sm">
                       <thead>
                         <tr className="border-b border-gray-200">
                           <th className="text-left py-2 px-2 font-semibold text-black">Ingredient</th>
@@ -426,7 +426,7 @@ export default function AdminRecipesPage() {
                             <td className="py-2 px-2">
                               <button
                                 onClick={() => handleDeleteRecipe(recipe.id)}
-                                className="text-red-600 font-bold hover:text-red-800 text-sm"
+                                className="text-red-600 font-bold hover:text-red-800 text-xs sm:text-sm"
                               >
                                 Delete
                               </button>
@@ -438,19 +438,19 @@ export default function AdminRecipesPage() {
                   </div>
 
                   {/* Mobile Cards */}
-                  <div className="md:hidden space-y-3">
+                  <div className="md:hidden space-y-2 sm:space-y-3">
                     {data.ingredients.map((recipe: Recipe) => (
-                      <div key={recipe.id} className="bg-gray-50 border-l-4 border-indigo-600 rounded p-3">
+                      <div key={recipe.id} className="bg-gray-50 border-l-4 border-indigo-600 rounded p-2 sm:p-3">
                         <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-bold text-black">{recipe.ingredient_name}</h4>
+                          <h4 className="font-bold text-black text-sm">{recipe.ingredient_name}</h4>
                           <button
                             onClick={() => handleDeleteRecipe(recipe.id)}
-                            className="text-red-600 font-bold hover:text-red-800 text-sm"
+                            className="text-red-600 font-bold hover:text-red-800 text-xs"
                           >
                             Delete
                           </button>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="grid grid-cols-2 gap-2 text-xs">
                           <div>
                             <p className="text-xs text-gray-600 font-bold">Unit</p>
                             <p className="text-black font-bold">{recipe.ingredient_unit}</p>

@@ -41,9 +41,9 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex h-screen">
-      {/* Sidebar - Hidden on mobile, visible on desktop */}
-      <div className="hidden md:block">
+    <div className="flex h-screen bg-gray-50">
+      {/* Desktop Sidebar - Fixed width, visible on md+ */}
+      <div className="hidden md:flex md:w-64 md:flex-col md:bg-gray-900">
         <AdminSidebar />
       </div>
 
@@ -64,11 +64,11 @@ export default function AdminLayout({
         <AdminSidebar onClose={() => setSidebarOpen(false)} />
       </div>
 
-      {/* Main Content */}
+      {/* Main Content - Flex column to fill remaining space */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Top Navigation Bar */}
         <div className="bg-white shadow-sm sticky top-0 z-20">
-          <div className="px-4 md:px-8 py-4 flex items-center justify-between">
+          <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between">
             {/* Mobile Menu Button */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -79,7 +79,7 @@ export default function AdminLayout({
               </svg>
             </button>
 
-            <h1 className="text-lg md:text-xl font-semibold text-gray-900">Admin Panel</h1>
+            <h1 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900">Admin Panel</h1>
 
             <button
               onClick={() => {
@@ -87,7 +87,7 @@ export default function AdminLayout({
                 localStorage.removeItem('current_user')
                 router.push('/login')
               }}
-              className="px-3 md:px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+              className="px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 hover:text-gray-900"
             >
               Logout
             </button>
@@ -95,7 +95,7 @@ export default function AdminLayout({
         </div>
 
         {/* Breadcrumb and Content */}
-        <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6">
+        <div className="flex-1 overflow-y-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
           <Breadcrumb />
           {children}
         </div>

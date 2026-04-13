@@ -19,18 +19,18 @@ export default function OrderDetailsModal({ order, isOpen, onClose }: OrderDetai
   const hasRecipeWarnings = order.status_change_info?.profit_calculation?.warnings?.length > 0
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-3 sm:p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 sticky top-0">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 sm:p-6 sticky top-0">
           <div className="flex justify-between items-start">
             <div>
-              <h2 className="text-2xl font-bold">Order #{order.id}</h2>
-              <p className="text-blue-100 mt-1">{order.customer_name}</p>
+              <h2 className="text-lg sm:text-2xl font-bold">Order #{order.id}</h2>
+              <p className="text-blue-100 mt-1 text-sm sm:text-base">{order.customer_name}</p>
             </div>
             <button
               onClick={onClose}
-              className="text-white hover:text-blue-100 text-2xl font-bold"
+              className="text-white hover:text-blue-100 text-2xl sm:text-3xl font-bold"
             >
               ×
             </button>
@@ -38,11 +38,11 @@ export default function OrderDetailsModal({ order, isOpen, onClose }: OrderDetai
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Customer Information */}
-          <div className="border-b pb-4">
-            <h3 className="text-lg font-bold text-gray-900 mb-3">Customer Information</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="border-b pb-3 sm:pb-4">
+            <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2 sm:mb-3">Customer Information</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
               <div>
                 <p className="text-gray-600">Name</p>
                 <p className="font-bold text-gray-900">{order.customer_name}</p>
@@ -67,15 +67,15 @@ export default function OrderDetailsModal({ order, isOpen, onClose }: OrderDetai
                 </p>
               </div>
             </div>
-            <p className="text-gray-600 text-sm mt-3">Address: {order.customer_address}</p>
+            <p className="text-gray-600 text-xs sm:text-sm mt-2 sm:mt-3">Address: {order.customer_address}</p>
           </div>
 
           {/* Items Ordered */}
-          <div className="border-b pb-4">
-            <h3 className="text-lg font-bold text-gray-900 mb-3">Items Ordered</h3>
+          <div className="border-b pb-3 sm:pb-4">
+            <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2 sm:mb-3">Items Ordered</h3>
             <div className="space-y-2">
               {order.items?.map((item: any, idx: number) => (
-                <div key={idx} className="flex justify-between text-sm bg-gray-50 p-3 rounded">
+                <div key={idx} className="flex justify-between text-xs sm:text-sm bg-gray-50 p-2 sm:p-3 rounded">
                   <div>
                     <p className="font-bold text-gray-900">{item.item_name}</p>
                     <p className="text-gray-600">{item.quantity_kg} kg @ {formatCurrency(parseFloat(item.price_per_kg))}/kg</p>
@@ -84,7 +84,7 @@ export default function OrderDetailsModal({ order, isOpen, onClose }: OrderDetai
                 </div>
               ))}
               {order.manual_items?.map((item: any, idx: number) => (
-                <div key={`manual-${idx}`} className="flex justify-between text-sm bg-gray-50 p-3 rounded">
+                <div key={`manual-${idx}`} className="flex justify-between text-xs sm:text-sm bg-gray-50 p-2 sm:p-3 rounded">
                   <div>
                     <p className="font-bold text-gray-900">{item.name}</p>
                     <p className="text-gray-600">{item.quantity_kg} kg @ {formatCurrency(parseFloat(item.price_per_kg))}/kg</p>
@@ -96,9 +96,9 @@ export default function OrderDetailsModal({ order, isOpen, onClose }: OrderDetai
           </div>
 
           {/* Financial Summary */}
-          <div className="border-b pb-4">
-            <h3 className="text-lg font-bold text-gray-900 mb-3">Financial Summary</h3>
-            <div className="space-y-2 text-sm">
+          <div className="border-b pb-3 sm:pb-4">
+            <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2 sm:mb-3">Financial Summary</h3>
+            <div className="space-y-2 text-xs sm:text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">Total Amount:</span>
                 <span className="font-bold text-gray-900">{formatCurrency(parseFloat(order.total_amount))}</span>
@@ -116,19 +116,19 @@ export default function OrderDetailsModal({ order, isOpen, onClose }: OrderDetai
 
           {/* Profit Breakdown (if order is completed) */}
           {order.status === 'Completed' && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <h3 className="text-lg font-bold text-green-900 mb-3">Profit Breakdown</h3>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
+              <h3 className="text-base sm:text-lg font-bold text-green-900 mb-2 sm:mb-3">Profit Breakdown</h3>
 
               {hasRecipeWarnings && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mb-3">
-                  <p className="text-sm font-bold text-yellow-800">⚠️ Warnings:</p>
+                <div className="bg-yellow-50 border border-yellow-200 rounded p-2 sm:p-3 mb-3">
+                  <p className="text-xs sm:text-sm font-bold text-yellow-800">⚠️ Warnings:</p>
                   {order.status_change_info?.profit_calculation?.warnings?.map((warning: string, idx: number) => (
-                    <p key={idx} className="text-sm text-yellow-700 mt-1">• {warning}</p>
+                    <p key={idx} className="text-xs sm:text-sm text-yellow-700 mt-1">• {warning}</p>
                   ))}
                 </div>
               )}
 
-              <div className="space-y-2 text-sm">
+              <div className="space-y-2 text-xs sm:text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total Revenue:</span>
                   <span className="font-bold text-gray-900">{formatCurrency(parseFloat(order.total_amount))}</span>

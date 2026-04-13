@@ -75,13 +75,19 @@ export default function AdminOrdersPage() {
   // SWR hooks for data fetching
   const { data: items = [], error: itemsError, isLoading: itemsLoading, mutate: mutateItems } = useSWR(
     isAuthenticated() && getCurrentUser()?.role === 'ADMIN' ? '/items/admin/all' : null,
-    undefined,
+    async (url: string) => {
+      const res = await axios.get(url)
+      return res.data
+    },
     { revalidateOnFocus: false }
   )
 
   const { data: orders = [], error: ordersError, isLoading: ordersLoading, mutate: mutateOrders } = useSWR(
     isAuthenticated() && getCurrentUser()?.role === 'ADMIN' ? '/orders/' : null,
-    undefined,
+    async (url: string) => {
+      const res = await axios.get(url)
+      return res.data
+    },
     { revalidateOnFocus: false }
   )
 
@@ -184,12 +190,12 @@ export default function AdminOrdersPage() {
 
   const calculateTotal = () => {
     const menuTotal = formData.selectedItems.reduce((total, orderItem) => {
-      const item = items.find(i => i.id === orderItem.itemId)
+      const item = items.find((i: any) => i.id === orderItem.itemId)
       return item ? total + (parseFloat(item.price_per_kg) * orderItem.quantity) : total
     }, 0)
 
     const manualTotal = formData.manualItems.reduce((total, item) =>
-      total + (item.price * item.quantity), 0)
+      total + (parseFloat(String(item.price)) * parseFloat(String(item.quantity))), 0)
 
     return menuTotal + manualTotal
   }
@@ -210,7 +216,7 @@ export default function AdminOrdersPage() {
         customer_phone: formData.customerPhone,
         customer_address: formData.customerAddress,
         items: formData.selectedItems.map(oi => {
-          const item = items.find(i => i.id === oi.itemId)
+          const item = items.find((i: any) => i.id === oi.itemId)
           return {
             item_id: oi.itemId,
             item_name: item?.name || '',
@@ -255,7 +261,7 @@ export default function AdminOrdersPage() {
         customer_phone: formData.customerPhone,
         customer_address: formData.customerAddress,
         items: formData.selectedItems.map(oi => {
-          const item = items.find(i => i.id === oi.itemId)
+          const item = items.find((i: any) => i.id === oi.itemId)
           return {
             item_id: oi.itemId,
             item_name: item?.name || '',
@@ -423,7 +429,7 @@ export default function AdminOrdersPage() {
                       onChange={(e) => handleItemChange(index, 'itemId', parseInt(e.target.value))}
                       className="border p-2 rounded flex-1 text-black font-bold"
                     >
-                      {items.map(item => (
+                      {items.map((item: any) => (
                         <option key={item.id} value={item.id}>{item.name} - {formatCurrency(parseFloat(item.price_per_kg))}</option>
                       ))}
                     </select>
@@ -550,14 +556,14 @@ export default function AdminOrdersPage() {
 
       {/* Filters */}
       <div className="bg-white shadow rounded-lg p-4 mb-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value as any)} className="border p-2 rounded text-black font-bold flex-1">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+          <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value as any)} className="border p-2 rounded text-black font-bold flex-1 text-sm sm:text-base">
             <option value="all">All Time</option>
             <option value="today">Today</option>
             <option value="week">This Week</option>
             <option value="month">This Month</option>
           </select>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)} className="border p-2 rounded text-black font-bold flex-1">
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)} className="border p-2 rounded text-black font-bold flex-1 text-sm sm:text-base">
             <option value="all">All Status</option>
             <option value="pending">Pending</option>
             <option value="partial">Partial</option>
@@ -572,33 +578,33 @@ export default function AdminOrdersPage() {
         <table className="w-full">
           <thead className="bg-gray-200">
             <tr>
-              <th className="p-4 text-left text-black font-bold">ID</th>
-              <th className="p-4 text-left text-black font-bold">Created By</th>
-              <th className="p-4 text-left text-black font-bold">Customer</th>
-              <th className="p-4 text-left text-black font-bold">Phone</th>
-              <th className="p-4 text-left text-black font-bold">Address</th>
-              <th className="p-4 text-left text-black font-bold">Total</th>
-              <th className="p-4 text-left text-black font-bold">Advance</th>
-              <th className="p-4 text-left text-black font-bold">Balance</th>
-              <th className="p-4 text-left text-black font-bold">Date</th>
-              <th className="p-4 text-left text-black font-bold">Status</th>
-              <th className="p-4 text-left text-black font-bold">Actions</th>
+              <th className="p-3 sm:p-4 text-left text-black font-bold text-sm">ID</th>
+              <th className="p-3 sm:p-4 text-left text-black font-bold text-sm">Created By</th>
+              <th className="p-3 sm:p-4 text-left text-black font-bold text-sm">Customer</th>
+              <th className="p-3 sm:p-4 text-left text-black font-bold text-sm">Phone</th>
+              <th className="p-3 sm:p-4 text-left text-black font-bold text-sm">Address</th>
+              <th className="p-3 sm:p-4 text-left text-black font-bold text-sm">Total</th>
+              <th className="p-3 sm:p-4 text-left text-black font-bold text-sm">Advance</th>
+              <th className="p-3 sm:p-4 text-left text-black font-bold text-sm">Balance</th>
+              <th className="p-3 sm:p-4 text-left text-black font-bold text-sm">Date</th>
+              <th className="p-3 sm:p-4 text-left text-black font-bold text-sm">Status</th>
+              <th className="p-3 sm:p-4 text-left text-black font-bold text-sm">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredOrders.map(o => (
               <tr key={o.id} className="border-t hover:bg-gray-50">
-                <td className="p-4 text-black font-bold">#{o.id}</td>
-                <td className="p-4 text-black font-bold">{o.created_by_name}</td>
-                <td className="p-4 text-black">{o.customer_name}</td>
-                <td className="p-4 text-black">{o.customer_phone}</td>
-                <td className="p-4 text-black">{o.customer_address || 'N/A'}</td>
-                <td className="p-4 text-black font-bold">{formatCurrency(parseFloat(o.total_amount))}</td>
-                <td className="p-4 text-black">{formatCurrency(parseFloat(o.advance_payment))}</td>
-                <td className="p-4 text-black font-bold">{formatCurrency(parseFloat(o.balance))}</td>
-                <td className="p-4 text-black">{new Date(o.created_at).toLocaleDateString()}</td>
-                <td className="p-4">{getStatusBadge(o.status)}</td>
-                <td className="p-4 flex gap-2 flex-wrap">
+                <td className="p-3 sm:p-4 text-black font-bold text-sm">#{o.id}</td>
+                <td className="p-3 sm:p-4 text-black font-bold text-sm">{o.created_by_name}</td>
+                <td className="p-3 sm:p-4 text-black text-sm">{o.customer_name}</td>
+                <td className="p-3 sm:p-4 text-black text-sm">{o.customer_phone}</td>
+                <td className="p-3 sm:p-4 text-black text-sm">{o.customer_address || 'N/A'}</td>
+                <td className="p-3 sm:p-4 text-black font-bold text-sm">{formatCurrency(parseFloat(o.total_amount))}</td>
+                <td className="p-3 sm:p-4 text-black text-sm">{formatCurrency(parseFloat(o.advance_payment))}</td>
+                <td className="p-3 sm:p-4 text-black font-bold text-sm">{formatCurrency(parseFloat(o.balance))}</td>
+                <td className="p-3 sm:p-4 text-black text-sm">{new Date(o.created_at).toLocaleDateString()}</td>
+                <td className="p-3 sm:p-4">{getStatusBadge(o.status)}</td>
+                <td className="p-3 sm:p-4 flex gap-1 flex-wrap">
                    <button onClick={() => {
                      setSelectedOrder(o)
                      setFormData({
@@ -620,19 +626,19 @@ export default function AdminOrdersPage() {
                        notes: o.notes || ''
                      })
                      setShowEditModal(true)
-                   }} className="text-blue-600 hover:text-blue-800 font-bold text-sm">Edit</button>
+                   }} className="text-blue-600 hover:text-blue-800 font-bold text-xs sm:text-sm">Edit</button>
                    <button onClick={() => {
                      setSelectedOrder(o)
                      setShowDetailsModal(true)
-                   }} className="text-indigo-600 hover:text-indigo-800 font-bold text-sm">View</button>
+                   }} className="text-indigo-600 hover:text-indigo-800 font-bold text-xs sm:text-sm">View</button>
                    {o.status === 'pending' && (
-                     <button onClick={() => handleChangeStatus(o.id, 'Processing')} className="text-orange-600 hover:text-orange-800 font-bold text-sm">Process</button>
+                     <button onClick={() => handleChangeStatus(o.id, 'Processing')} className="text-orange-600 hover:text-orange-800 font-bold text-xs sm:text-sm">Process</button>
                    )}
                    {o.status === 'Processing' && (
-                     <button onClick={() => handleChangeStatus(o.id, 'Completed')} className="text-green-600 hover:text-green-800 font-bold text-sm">Complete</button>
+                     <button onClick={() => handleChangeStatus(o.id, 'Completed')} className="text-green-600 hover:text-green-800 font-bold text-xs sm:text-sm">Complete</button>
                    )}
-                   <button onClick={() => downloadInvoice(o.id)} className="text-green-600 hover:text-green-800 font-bold text-sm">PDF</button>
-                   <button onClick={() => handleCancelOrder(o.id)} className="text-red-600 hover:text-red-800 font-bold text-sm">Cancel</button>
+                   <button onClick={() => downloadInvoice(o.id)} className="text-green-600 hover:text-green-800 font-bold text-xs sm:text-sm">PDF</button>
+                   <button onClick={() => handleCancelOrder(o.id)} className="text-red-600 hover:text-red-800 font-bold text-xs sm:text-sm">Cancel</button>
                 </td>
               </tr>
             ))}
@@ -641,35 +647,35 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Mobile Cards */}
-      <div className="md:hidden space-y-4">
+      <div className="md:hidden space-y-3 sm:space-y-4">
         {filteredOrders.map(o => (
-          <div key={o.id} className="bg-white shadow rounded-lg p-4 border-l-4 border-indigo-600">
-            <div className="flex justify-between items-start mb-3">
-              <h3 className="text-lg font-bold text-black">Order #{o.id}</h3>
+          <div key={o.id} className="bg-white shadow rounded-lg p-3 sm:p-4 border-l-4 border-indigo-600">
+            <div className="flex justify-between items-start mb-2 sm:mb-3">
+              <h3 className="text-base sm:text-lg font-bold text-black">Order #{o.id}</h3>
               <div>{getStatusBadge(o.status)}</div>
             </div>
-            <p className="text-black font-bold">{o.customer_name}</p>
-            <p className="text-black text-sm">{o.customer_phone}</p>
-            <p className="text-black text-sm mb-2">{o.customer_address || 'No address'}</p>
-            <div className="grid grid-cols-2 gap-3 my-4 bg-gray-50 p-3 rounded">
+            <p className="text-black font-bold text-sm sm:text-base">{o.customer_name}</p>
+            <p className="text-black text-xs sm:text-sm">{o.customer_phone}</p>
+            <p className="text-black text-xs sm:text-sm mb-2 sm:mb-3">{o.customer_address || 'No address'}</p>
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 my-3 sm:my-4 bg-gray-50 p-2 sm:p-3 rounded">
               <div>
                 <p className="text-xs text-gray-700 font-bold">Total</p>
-                <p className="text-black font-bold">{formatCurrency(parseFloat(o.total_amount))}</p>
+                <p className="text-black font-bold text-sm">{formatCurrency(parseFloat(o.total_amount))}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-700 font-bold">Advance</p>
-                <p className="text-black font-bold">{formatCurrency(parseFloat(o.advance_payment))}</p>
+                <p className="text-black font-bold text-sm">{formatCurrency(parseFloat(o.advance_payment))}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-700 font-bold">Balance</p>
-                <p className="text-red-600 font-bold">{formatCurrency(parseFloat(o.balance))}</p>
+                <p className="text-red-600 font-bold text-sm">{formatCurrency(parseFloat(o.balance))}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-700 font-bold">Date</p>
-                <p className="text-black font-bold">{new Date(o.created_at).toLocaleDateString()}</p>
+                <p className="text-black font-bold text-sm">{new Date(o.created_at).toLocaleDateString()}</p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1 sm:gap-2">
               <button onClick={() => {
                 setSelectedOrder(o)
                 setFormData({
@@ -691,19 +697,19 @@ export default function AdminOrdersPage() {
                   notes: o.notes || ''
                 })
                 setShowEditModal(true)
-              }} className="flex-1 min-w-[80px] bg-blue-600 text-white px-2 py-2 rounded font-bold text-xs hover:bg-blue-700">Edit</button>
+              }} className="flex-1 min-w-[70px] bg-blue-600 text-white px-2 py-2 rounded font-bold text-xs hover:bg-blue-700">Edit</button>
               <button onClick={() => {
                 setSelectedOrder(o)
                 setShowDetailsModal(true)
-              }} className="flex-1 min-w-[80px] bg-indigo-600 text-white px-2 py-2 rounded font-bold text-xs hover:bg-indigo-700">View</button>
+              }} className="flex-1 min-w-[70px] bg-indigo-600 text-white px-2 py-2 rounded font-bold text-xs hover:bg-indigo-700">View</button>
               {o.status === 'pending' && (
-                <button onClick={() => handleChangeStatus(o.id, 'Processing')} className="flex-1 min-w-[80px] bg-orange-600 text-white px-2 py-2 rounded font-bold text-xs hover:bg-orange-700">Process</button>
+                <button onClick={() => handleChangeStatus(o.id, 'Processing')} className="flex-1 min-w-[70px] bg-orange-600 text-white px-2 py-2 rounded font-bold text-xs hover:bg-orange-700">Process</button>
               )}
               {o.status === 'Processing' && (
-                <button onClick={() => handleChangeStatus(o.id, 'Completed')} className="flex-1 min-w-[80px] bg-green-600 text-white px-2 py-2 rounded font-bold text-xs hover:bg-green-700">Complete</button>
+                <button onClick={() => handleChangeStatus(o.id, 'Completed')} className="flex-1 min-w-[70px] bg-green-600 text-white px-2 py-2 rounded font-bold text-xs hover:bg-green-700">Complete</button>
               )}
-              <button onClick={() => downloadInvoice(o.id)} className="flex-1 min-w-[80px] bg-green-600 text-white px-2 py-2 rounded font-bold text-xs hover:bg-green-700">PDF</button>
-              <button onClick={() => handleCancelOrder(o.id)} className="flex-1 min-w-[80px] bg-red-600 text-white px-2 py-2 rounded font-bold text-xs hover:bg-red-700">Cancel</button>
+              <button onClick={() => downloadInvoice(o.id)} className="flex-1 min-w-[70px] bg-green-600 text-white px-2 py-2 rounded font-bold text-xs hover:bg-green-700">PDF</button>
+              <button onClick={() => handleCancelOrder(o.id)} className="flex-1 min-w-[70px] bg-red-600 text-white px-2 py-2 rounded font-bold text-xs hover:bg-red-700">Cancel</button>
             </div>
           </div>
         ))}
@@ -777,7 +783,7 @@ export default function AdminOrdersPage() {
                         onChange={(e) => handleItemChange(index, 'itemId', parseInt(e.target.value))}
                         className="border p-2 rounded flex-1 text-black font-bold"
                       >
-                        {items.map(item => (
+                        {items.map((item: any) => (
                           <option key={item.id} value={item.id}>{item.name} - {formatCurrency(parseFloat(item.price_per_kg))}</option>
                         ))}
                       </select>
